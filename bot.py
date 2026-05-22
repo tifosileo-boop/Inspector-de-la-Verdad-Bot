@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands, tasks
 import random 
+import os
 
 from flask import Flask
 from threading import Thread
@@ -217,5 +218,5 @@ async def examen(ctx):
 # Encendemos el servidor web falso para engañar a Render
 keep_alive()
 
-# --- REEMPLAZÁ CON TU NUEVO TOKEN ACÁ ABAJO ---
-bot.run('MTQ5NzEwNDAxMDc5MDgzMDExMA.GFtzLx.DvcB4CPyNngleohbHqsgCZLJK8uPEd96ty2Gro')
+token_secreto = os.getenv('DISCORD_TOKEN')
+bot.run(token_secreto)
