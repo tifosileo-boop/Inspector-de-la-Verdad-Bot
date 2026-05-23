@@ -28,7 +28,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 async def ping(ctx):
     await ctx.send('¡Comunicación completamente operativa!')
 
-@tasks.loop(minutes=120) 
+@tasks.loop(hours=2)
 async def transmision_oficial():
     
     canal = bot.get_channel(1394371063865147424) 
