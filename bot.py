@@ -21,20 +21,19 @@ def keep_alive():
 
 intents = discord.Intents.default()
 intents.message_content = True
-intents.members = True # Obligatorio para poder dar roles
+intents.members = True 
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 @bot.command()
 async def ping(ctx):
     await ctx.send('¡Comunicación completamente operativa!')
 
-@tasks.loop(minutes=60) 
+@tasks.loop(minutes=120) 
 async def transmision_oficial():
-    # Tu ID del canal va acá abajo
+    
     canal = bot.get_channel(1394371063865147424) 
     
     if canal:
-        # Armamos el menú de opciones de propaganda
         frases_ministerio = [	
             "Recuerden tomar agua, es bueno para su salud y para la democracia",
             "📺 **Recordatorio:** Reportar disidentes hace que te ganes el favor de Xene.",							
@@ -50,23 +49,23 @@ async def transmision_oficial():
             "Caer en combate por fuego amigo es un honor patriótico. Quejarse no.",
             "Recuerda ser demostrar tú actividad con las fichas de lealtad usando !presente todos los días. El !bump también ayuda."
         ]
-        # El bot elige una al azar de la lista
+        
         mensaje_sorteado = random.choice(frases_ministerio)
         
-        # Y la manda al canal
+        
         await canal.send(mensaje_sorteado)
 
 @bot.event
 async def on_ready():
     print(f'¡{bot.user} ha arribado, comenzando inspección!')
-    transmision_oficial.start() # Esto enciende el motor de los mensajes automáticos
+    transmision_oficial.start() 
 
 @bot.command()
 async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
-    # --- REEMPLAZÁ ESTE NÚMERO POR TU ID REAL (SIN COMILLAS) ---
+
     ID_CANAL_MODS = 1394422101129167039 
     
-    # Verificamos que hayan puesto los datos
+  
     if sospechoso is None or motivo is None:
         await ctx.send("❌ **ERROR DE PROTOCOLO:** Tenés que mencionar a alguien y dar un motivo. \nEjemplo: `!reportar @Usuario Es un bicho`.")
         return
@@ -90,7 +89,7 @@ async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
     else:
         await ctx.send("❌ **ERROR DE SISTEMA:** No encuentro el canal de moderación. Revisá el ID en el código.")
 
-# --- RESPUESTA A MENCIONES ---
+
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
@@ -135,15 +134,15 @@ async def on_message(message):
 
 
 @bot.command()
-@commands.has_permissions(manage_messages=True) # Solo los rangos altos pueden usarlo
+@commands.has_permissions(manage_messages=True) 
 async def clear(ctx, cantidad: int):
-    # Borra la cantidad de mensajes que le digas + 1 (el comando en sí)
+    
     await ctx.channel.purge(limit=cantidad + 1)
     
-    # Manda un aviso y se borra solo a los 5 segundos
+    
     mensaje = await ctx.send(f"🧹 El Ministerio de la Obediencia ha incinerado {cantidad} mensajes de disidencia.")
     
-# Diccionario para guardar las rachas (se resetea si el bot se reinicia)
+
 fichadas_lealtad = {}
 
 @bot.command()
@@ -152,7 +151,7 @@ async def queja(ctx, *, texto=None):
         await ctx.send("❌ **ERROR:** No podés quejarte del vacío. Escribí algo, che.")
         return
 
-    # ID DEL CANAL DE MODS (el mismo que usaste en reportar)
+   
     canal_mods = bot.get_channel(1394422101129167039) 
     
     respuestas_burocraticas = [
@@ -202,12 +201,12 @@ async def examen(ctx):
     await ctx.send(f"🧐 **EXAMEN DE CIUDADANÍA:**\n{pregunta_sorteada['p']}\n*(Tenés 15 segundos para responder)*")
 
     def check(m):
-        # Verifica que la respuesta sea en el mismo canal y no sea del bot
+        
         return m.channel == ctx.channel and m.author != bot.user
 
     try:
         msg = await bot.wait_for('message', check=check, timeout=15.0)
-        # Limpiamos la respuesta (sacamos tildes y mayúsculas para que sea más fácil)
+        
         if pregunta_sorteada['r'].lower() in msg.content.lower():
             await ctx.send(f"✅ ¡Correcto {msg.author.mention}! Has demostrado ser un ciudadano ejemplar.")
         else:
@@ -215,7 +214,7 @@ async def examen(ctx):
     except:
         await ctx.send("⏰ Se acabó el tiempo. El silencio es sospechoso de traición.")
 
-# Encendemos el servidor web falso para engañar a Render
+
 keep_alive()
 
 token_secreto = os.getenv('DISCORD_TOKEN')
