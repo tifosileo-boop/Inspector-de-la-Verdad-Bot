@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands, tasks
 import random 
 import os
+import datetime
 
 from flask import Flask
 from threading import Thread
@@ -61,12 +62,6 @@ async def transmision_oficial():
         ultimo_mensaje_propaganda = mensaje_sorteado
         
         await canal.send(mensaje_sorteado)
-
-
-@bot.event
-async def on_ready():
-    print(f'¡{bot.user} ha arribado, comenzando inspección!')
-    transmision_oficial.start() 
 
 @bot.command()
 async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
@@ -245,10 +240,6 @@ async def on_ready():
     
     if not transmision_oficial.is_running():
         transmision_oficial.start()
-        
-    if not cadena_nacional.is_running():
-        cadena_nacional.start()
-
 
     if not toque_de_queda.is_running():
         toque_de_queda.start()
