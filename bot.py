@@ -50,8 +50,16 @@ async def transmision_oficial():
             "Recuerda ser demostrar tú actividad con las fichas de lealtad usando !presente todos los días. El !bump también ayuda."
         ]
         
-        mensaje_sorteado = random.choice(frases_ministerio)
+        mensaje_sorteado = random.choice(frases_ministerio)        
         
+        
+        await canal.send(mensaje_sorteado)
+        
+        opciones_validas = [frase for frase in frases_ministerio if frase != ultimo_mensaje_propaganda]
+        
+        mensaje_sorteado = random.choice(opciones_validas)
+        
+        ultimo_mensaje_propaganda = mensaje_sorteado
         
         await canal.send(mensaje_sorteado)
 
@@ -113,7 +121,7 @@ async def on_message(message):
             "Si ven que Xene está conectado, mencionenlo a el",
             "Agarrá la pala."
             "¿Qué necesita, ciudadano? La burocracia no se hace sola.",
-            "Estoy ocupado revisando expedientes de traición, sea breve.",
+            "Estoy ocupada revisando expedientes de traición, sea breve.",
             "Si va a reportar una disidencia, use el comando oficial !reportar.",
             "Xene me exige estar alerta. ¿En qué lo asisto?",
             "Cuidado con lo que dice en este canal. Todo queda registrado.", 
@@ -215,6 +223,38 @@ async def examen(ctx):
         await ctx.send("⏰ Se acabó el tiempo. El silencio es sospechoso de traición.")
 
 
+
+hora_cierre = datetime.time(hour=3, minute=0, tzinfo=datetime.timezone.utc)   # 00:00 Argentina
+hora_apertura = datetime.time(hour=11, minute=0, tzinfo=datetime.timezone.utc) # 08:00 Argentina
+
+@tasks.loop(time=hora_cierre)
+async def toque_de_queda():
+    canal = bot.get_channel(1394371063865147424) 
+    if canal:
+        await canal.send("Me iré a descansar, hice un buen trabajo por hoy...")
+
+@tasks.loop(time=hora_apertura)
+async def izar_bandera():
+    canal = bot.get_channel(1394371063865147424) 
+    if canal:
+        await canal.send("Todo este tiempo estuve despierta...")
+
+@bot.event
+async def on_ready():
+    print(f'¡{bot.user} ha arribado, comenzando inspección constante!')
+    
+    if not transmision_oficial.is_running():
+        transmision_oficial.start()
+        
+    if not cadena_nacional.is_running():
+        cadena_nacional.start()
+
+
+    if not toque_de_queda.is_running():
+        toque_de_queda.start()
+        
+    if not izar_bandera.is_running():
+        izar_bandera.start()
 keep_alive()
 
 token_secreto = os.getenv('DISCORD_TOKEN')
