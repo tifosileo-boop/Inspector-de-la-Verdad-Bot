@@ -49,12 +49,7 @@ async def transmision_oficial():
             "Caer en combate por fuego amigo es un honor patriótico. Quejarse no.",
             "Recuerda ser demostrar tú actividad con las fichas de lealtad usando !presente todos los días. El !bump también ayuda."
         ]
-        
-        mensaje_sorteado = random.choice(frases_ministerio)        
-        
-        
-        await canal.send(mensaje_sorteado)
-        
+       
         opciones_validas = [frase for frase in frases_ministerio if frase != ultimo_mensaje_propaganda]
         
         mensaje_sorteado = random.choice(opciones_validas)
