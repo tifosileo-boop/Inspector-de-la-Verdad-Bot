@@ -28,17 +28,22 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 async def ping(ctx):
     await ctx.send('¡Comunicación completamente operativa!')
 
-@tasks.loop(hours=2)
+ultimo_mensaje_propaganda = ""
+
+@tasks.loop(hours=2) 
 async def transmision_oficial():
-    
+    global ultimo_mensaje_propaganda
     canal = bot.get_channel(1394371063865147424) 
     
     if canal:
+        hora_argentina = (datetime.datetime.utcnow() - datetime.timedelta(hours=3)).hour
+        if 0 <= hora_argentina < 8:
+            return 
+        
         frases_ministerio = [	
             "Recuerden tomar agua, es bueno para su salud y para la democracia",
             "📺 **Recordatorio:** Reportar disidentes hace que te ganes el favor de Xene.",							
             "📺 **Ministerio de la Obediencia:** Pensar demasiado puede tentarte a la disidencia. ¡NO PIENSES DE MÁS!",
-            "📺 **Recordatorio:** Reportar disidentes hace que te ganes el favor de Xene.",
             "¿Para que apostar cuando podés poner todo a acciones de alto riesgo?",
             "La falta de actividad en el chat es considerado traición al servidor. No querrás ir a un centro de reacondicionamiento, ¿no?",
             "Cuando duermo, imagino al server en su máximo esplendor...",
@@ -49,14 +54,14 @@ async def transmision_oficial():
             "Caer en combate por fuego amigo es un honor patriótico. Quejarse no.",
             "Recuerda ser demostrar tú actividad con las fichas de lealtad usando !presente todos los días. El !bump también ayuda."
         ]
-       
+        
+        # Sistema anti-repetición
         opciones_validas = [frase for frase in frases_ministerio if frase != ultimo_mensaje_propaganda]
-        
         mensaje_sorteado = random.choice(opciones_validas)
-        
         ultimo_mensaje_propaganda = mensaje_sorteado
         
         await canal.send(mensaje_sorteado)
+
 
 @bot.event
 async def on_ready():
@@ -232,7 +237,7 @@ async def toque_de_queda():
 async def izar_bandera():
     canal = bot.get_channel(1394371063865147424) 
     if canal:
-        await canal.send("Todo este tiempo estuve despierta...")
+        await canal.send("Mentí, todo este tiempo estuve despierta... Así que lo leí todo")
 
 @bot.event
 async def on_ready():
