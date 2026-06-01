@@ -29,6 +29,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 async def ping(ctx):
     await ctx.send('¡Comunicación completamente operativa!')
 
+# Memoria a corto plazo del bot (va afuera de la función)
 ultimo_mensaje_propaganda = ""
 
 @tasks.loop(hours=2) 
@@ -37,10 +38,32 @@ async def transmision_oficial():
     canal = bot.get_channel(1394371063865147424) 
     
     if canal:
-        hora_argentina = (datetime.datetime.utcnow() - datetime.timedelta(hours=3)).hour
+        # 1. HORARIO DE SILENCIO (Con el código moderno para evitar advertencias en Render)
+        ahora_utc = datetime.datetime.now(datetime.timezone.utc)
+        hora_argentina = (ahora_utc - datetime.timedelta(hours=3)).hour
+        
         if 0 <= hora_argentina < 8:
             return 
-        
+
+        # 2. AUDITORÍA DE ACTIVIDAD EN EL CHAT
+        ultimo_mensaje = None
+        # Leemos el último mensaje que se mandó en el canal
+        async for msg in canal.history(limit=1):
+            ultimo_mensaje = msg
+            
+        if ultimo_mensaje:
+            # Si el último en hablar fue el mismísimo Inspector, cortamos el trámite para que no hable solo
+            if ultimo_mensaje.author == bot.user:
+                return
+            
+            # Si el último mensaje es de un usuario, medimos cuánto tiempo pasó
+            diferencia = ahora_utc - ultimo_mensaje.created_at
+            
+            # Si pasaron más de 3 horas (10800 segundos) en total silencio, asumimos que están todos durmiendo
+            if diferencia.total_seconds() > 10800:
+                return
+
+        # 3. TRANSMISIÓN DE PROPAGANDA
         frases_ministerio = [	
             "Recuerden tomar agua, es bueno para su salud y para la democracia",
             "📺 **Recordatorio:** Reportar disidentes hace que te ganes el favor de Xene.",							
