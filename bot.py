@@ -52,18 +52,14 @@ async def transmision_oficial():
             ultimo_mensaje = msg
             
         if ultimo_mensaje:
-            # Si el último en hablar fue el mismísimo Inspector, cortamos el trámite para que no hable solo
             if ultimo_mensaje.author == bot.user:
                 return
             
-            # Si el último mensaje es de un usuario, medimos cuánto tiempo pasó
             diferencia = ahora_utc - ultimo_mensaje.created_at
             
-            # Si pasaron más de 3 horas (10800 segundos) en total silencio, asumimos que están todos durmiendo
             if diferencia.total_seconds() > 10800:
                 return
 
-        # 3. TRANSMISIÓN DE PROPAGANDA
         frases_ministerio = [	
             "Recuerden tomar agua, es bueno para su salud y para la democracia",
             "📺 **Recordatorio:** Reportar disidentes hace que te ganes el favor de Xene.",							
@@ -79,7 +75,6 @@ async def transmision_oficial():
             "Recuerda ser demostrar tú actividad con las fichas de lealtad usando !presente todos los días. El !bump también ayuda."
         ]
         
-        # Sistema anti-repetición
         opciones_validas = [frase for frase in frases_ministerio if frase != ultimo_mensaje_propaganda]
         mensaje_sorteado = random.choice(opciones_validas)
         ultimo_mensaje_propaganda = mensaje_sorteado
@@ -119,6 +114,16 @@ async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
+        return
+    if len(message.mentions) > 5:
+        await message.delete()
+        try:
+            await message.author.kick(reason="Protocolo Anti-Nuke: Spam masivo de menciones")
+            canal_seguridad = bot.get_channel(1394371063865147424)
+            if canal_seguridad:
+                await canal_seguridad.send(f"🚨 **DEFENSA ACTIVADA:** El usuario {message.author.name} intentó un ping masivo. Fue ejecutado en el acto.")
+        except Exception as e:
+            print(f"Error burocrático al expulsar: {e}")
         return
 
     if bot.user in message.mentions:
