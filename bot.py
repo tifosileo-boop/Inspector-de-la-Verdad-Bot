@@ -3,7 +3,6 @@ from discord.ext import commands, tasks
 import random 
 import os
 import datetime
-
 from flask import Flask
 from threading import Thread
 
@@ -29,34 +28,23 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 async def ping(ctx):
     await ctx.send('¡Comunicación completamente operativa!')
 
-# Memoria a corto plazo del bot (va afuera de la función)
 ultimo_mensaje_propaganda = ""
-
 @tasks.loop(hours=2) 
 async def transmision_oficial():
     global ultimo_mensaje_propaganda
     canal = bot.get_channel(1394371063865147424) 
-    
     if canal:
-        # 1. HORARIO DE SILENCIO (Con el código moderno para evitar advertencias en Render)
         ahora_utc = datetime.datetime.now(datetime.timezone.utc)
         hora_argentina = (ahora_utc - datetime.timedelta(hours=3)).hour
-        
         if 0 <= hora_argentina < 8:
             return 
-
-        # 2. AUDITORÍA DE ACTIVIDAD EN EL CHAT
         ultimo_mensaje = None
-        # Leemos el último mensaje que se mandó en el canal
         async for msg in canal.history(limit=1):
-            ultimo_mensaje = msg
-            
+            ultimo_mensaje = msg           
         if ultimo_mensaje:
             if ultimo_mensaje.author == bot.user:
-                return
-            
-            diferencia = ahora_utc - ultimo_mensaje.created_at
-            
+                return 
+            diferencia = ahora_utc - ultimo_mensaje.created_at 
             if diferencia.total_seconds() > 10800:
                 return
 
@@ -163,26 +151,17 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-
 @bot.command()
 @commands.has_permissions(manage_messages=True) 
 async def clear(ctx, cantidad: int):
-    
     await ctx.channel.purge(limit=cantidad + 1)
-    
-    
     mensaje = await ctx.send(f"🧹 El Ministerio de la Obediencia ha incinerado {cantidad} mensajes de disidencia.")
-    
-
 fichadas_lealtad = {}
-
 @bot.command()
 async def queja(ctx, *, texto=None):
     if texto is None:
         await ctx.send("❌ **ERROR:** No podés quejarte del vacío. Escribí algo, che.")
         return
-
-   
     canal_mods = bot.get_channel(1394422101129167039) 
     
     respuestas_burocraticas = [
@@ -247,8 +226,8 @@ async def examen(ctx):
 
 
 
-hora_cierre = datetime.time(hour=3, minute=0, tzinfo=datetime.timezone.utc)   # 00:00 Argentina
-hora_apertura = datetime.time(hour=11, minute=0, tzinfo=datetime.timezone.utc) # 08:00 Argentina
+hora_cierre = datetime.time(hour=3, minute=0, tzinfo=datetime.timezone.utc) 
+hora_apertura = datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc) 
 
 @tasks.loop(time=hora_cierre)
 async def toque_de_queda():
@@ -316,20 +295,22 @@ async def on_guild_channel_create(channel):
                 return
             tiempo_actual = datetime.datetime.now(datetime.timezone.utc)
             if atacante.id not in registro_creacion_canales:
-                registro_creacion_canales[atacante.id] = []
-                
-            registro_creacion_canales[atacante.id].append(tiempo_actual)
-        
+                registro_creacion_canales[atacante.id] = []           
+            registro_creacion_canales[atacante.id].append(tiempo_actual)        
             creaciones_recientes = [t for t in registro_creacion_canales[atacante.id] if (tiempo_actual - t).total_seconds() < 15]
             registro_creacion_canales[atacante.id] = creaciones_recientes
-            if len(creaciones_recientes) >= 3:
+            if len(acciones_recientes) >= 2:
                 try:
-                    await atacante.ban(reason="Protocolo Anti-Nuke: Spam masivo de canales (Saturación)")
+                    try:
+                        await atacante.send("Has sido ejecutado en el acto por intento de sabotaje a la infraestructura del servidor. Tu traición no será olvidada. Hasta nunca, idiota.")
+                    except:
+                        pass 
+                    await atacante.ban(reason="Protocolo Anti-Nuke: Destrucción de infraestructura del Servidor")
                     canal_alertas = bot.get_channel(1394371063865147424)
                     if canal_alertas:
-                        await canal_alertas.send(f"🚨 **DEFENSA DE PUNTO ACTIVADA:** {atacante.mention} intentó inundar el servidor creando canales basura. Ha sido ejecutado en el acto por la Inspectora.")
+                        await canal_alertas.send(f"🚨 **¡INTRUSIÓN NEUTRALIZADA!** El individuo {atacante.mention} intentó desmantelar el servidor y fue ejecutado en el acto.")
                 except Exception as e:
-                    print(f"Fallo en la ejecución burocrática: {e}")
+                    print(f"Error burocrático al detener nuke: {e}")
             
 
 token_secreto = os.getenv('DISCORD_TOKEN')
