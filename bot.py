@@ -271,5 +271,61 @@ async def on_ready():
         izar_bandera.start()
 keep_alive()
 
+acciones_seguridad = {}
+
+@bot.event
+async def on_guild_channel_delete(channel):
+    async for entry in channel.guild.audit_logs(action=discord.AuditLogAction.channel_delete, limit=1):
+        if entry.target.id == channel.id:
+            atacante = entry.user
+            
+            if atacante == bot.user or atacante.id == channel.guild.owner_id:
+                return
+
+            tiempo_actual = datetime.datetime.now(datetime.timezone.utc)
+            
+            if atacante.id not in acciones_seguridad:
+                acciones_seguridad[atacante.id] = []
+                
+            acciones_seguridad[atacante.id].append(tiempo_actual)
+            
+            acciones_recientes = [t for t in acciones_seguridad[atacante.id] if (tiempo_actual - t).total_seconds() < 10]
+            acciones_seguridad[atacante.id] = acciones_recientes
+            
+            if len(acciones_recientes) >= 2:
+                try:
+                    await atacante.ban(reason="Protocolo Anti-Nuke: Destrucción de infraestructura del Servidor")
+                    canal_alertas = bot.get_channel(1394371063865147424)
+                    if canal_alertas:
+                        await canal_alertas.send(f"🚨 **¡INTRUSIÓN NEUTRALIZADA!** El individuo {atacante.mention} intentó desmantelar el servidor y fue ejecutado en el acto.")
+                except Exception as e:
+                    print(f"Error burocrático al detener nuke: {e}")
+registro_creacion_canales = {}
+
+@bot.event
+async def on_guild_channel_create(channel):
+    async for entry in channel.guild.audit_logs(action=discord.AuditLogAction.channel_create, limit=1):
+        if entry.target.id == channel.id:
+            atacante = entry.user
+            if atacante == bot.user or atacante.id == channel.guild.owner_id:
+                return
+            tiempo_actual = datetime.datetime.now(datetime.timezone.utc)
+            if atacante.id not in registro_creacion_canales:
+                registro_creacion_canales[atacante.id] = []
+                
+            registro_creacion_canales[atacante.id].append(tiempo_actual)
+        
+            creaciones_recientes = [t for t in registro_creacion_canales[atacante.id] if (tiempo_actual - t).total_seconds() < 15]
+            registro_creacion_canales[atacante.id] = creaciones_recientes
+            if len(creaciones_recientes) >= 3:
+                try:
+                    await atacante.ban(reason="Protocolo Anti-Nuke: Spam masivo de canales (Saturación)")
+                    canal_alertas = bot.get_channel(1394371063865147424)
+                    if canal_alertas:
+                        await canal_alertas.send(f"🚨 **DEFENSA DE PUNTO ACTIVADA:** {atacante.mention} intentó inundar el servidor creando canales basura. Ha sido ejecutado en el acto por la Inspectora.")
+                except Exception as e:
+                    print(f"Fallo en la ejecución burocrática: {e}")
+            
+
 token_secreto = os.getenv('DISCORD_TOKEN')
 bot.run(token_secreto)
