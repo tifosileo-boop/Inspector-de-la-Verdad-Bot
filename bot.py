@@ -142,7 +142,7 @@ async def on_message(message):
             "Putearme no te da facha",
             "Si estas aburrido... Puedes ayudar a Xene a repasar, si es que estás dispuesto o dispuesta a escuchar una hora de repaso sobre el código civil y comercial",
             "Si ven que Xene está conectado, mencionenlo a el",
-            "Agarrá la pala."
+            "Agarrá la pala.",
             "¿Qué necesita, ciudadano? La burocracia no se hace sola.",
             "Estoy ocupada revisando expedientes de traición, sea breve.",
             "Si va a reportar una disidencia, use el comando oficial !reportar.",
