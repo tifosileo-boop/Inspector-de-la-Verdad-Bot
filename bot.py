@@ -69,35 +69,58 @@ async def transmision_oficial():
         
         await canal.send(mensaje_sorteado)
 
+conteo_reportes = {}
+
 @bot.command()
 async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
-
     ID_CANAL_MODS = 1394422101129167039 
     
-  
     if sospechoso is None or motivo is None:
         await ctx.send("❌ **ERROR DE PROTOCOLO:** Tenés que mencionar a alguien y dar un motivo. \nEjemplo: `!reportar @Usuario Es un bicho`.")
+        return
+        
+    if sospechoso == ctx.author or sospechoso == bot.user:
+        await ctx.send("❌ **ERROR:** No podés reportarte a vos mismo ni a la Inspectora. Circule.")
         return
 
     canal_mods = bot.get_channel(ID_CANAL_MODS)
     
+    if sospechoso.id not in conteo_reportes:
+        conteo_reportes[sospechoso.id] = 1
+    else:
+        conteo_reportes[sospechoso.id] += 1
+        
+    cantidad = conteo_reportes[sospechoso.id]
+
     if canal_mods:
         try:
-            mensaje_alerta = (
-                f"🚨 **REPORTE DE DISIDENCIA RECIBIDO** 🚨\n"
-                f"El Ministerio de la Obediencia ha sido notificado.\n"
-                f"**Denunciante:** {ctx.author.mention}\n"
-                f"**Sospechoso:** {sospechoso.mention}\n"
-                f"**Motivo:** {motivo}\n\n"
-                f"*La Libertad agradece tu cooperación...*"
-            )
-            await canal_mods.send(mensaje_alerta)
-            await ctx.send(f"✅ Recibido, {ctx.author.mention}. El expediente fue enviado a los altos mandos.")
+            if cantidad >= 3:
+                try:
+                    await sospechoso.send("🛑 **NOTIFICACIÓN DEL MINISTERIO:** Has acumulado demasiadas denuncias ciudadanas por disidencia. El Estado ha decidido exiliarte permanentemente.")
+                except:
+                    pass 
+                    
+                await sospechoso.ban(reason=f"Acumulación de 3 reportes ciudadanos. Último motivo: {motivo}")
+                await canal_mods.send(f"🚨 **¡EXILIO AUTOMÁTICO!** 🚨\nEl individuo {sospechoso.mention} acumuló 3 reportes y fue purgado de la red.\n**Último denunciante:** {ctx.author.mention}\n**Último motivo:** {motivo}")
+                await ctx.send(f"✅ Recibido, {ctx.author.mention}. El sospechoso había acumulado demasiadas denuncias y acaba de ser exiliado. ¡La democracia te lo agradece!")
+
+                conteo_reportes.pop(sospechoso.id, None)
+                
+            else:
+                mensaje_alerta = (
+                    f"🚨 **REPORTE DE DISIDENCIA RECIBIDO** 🚨\n"
+                    f"El Ministerio de la Obediencia ha sido notificado. (Advertencia {cantidad}/3)\n"
+                    f"**Denunciante:** {ctx.author.mention}\n"
+                    f"**Sospechoso:** {sospechoso.mention}\n"
+                    f"**Motivo:** {motivo}\n\n"
+                    f"*La Libertad agradece tu cooperación...*"
+                )
+                await canal_mods.send(mensaje_alerta)
+                await ctx.send(f"✅ Recibido, {ctx.author.mention}. La infracción (Falta {cantidad}/3) fue sumada al expediente del ciudadano.")
         except Exception as e:
-            await ctx.send(f"⚠️ Error técnico al enviar el reporte: {e}")
+            await ctx.send(f"⚠️ Error técnico en la burocracia: {e}")
     else:
         await ctx.send("❌ **ERROR DE SISTEMA:** No encuentro el canal de moderación. Revisá el ID en el código.")
-
 
 @bot.event
 async def on_message(message):
