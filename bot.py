@@ -5,7 +5,10 @@ import os
 import datetime
 from flask import Flask
 from threading import Thread
-
+import json
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import db
 app = Flask('')
 
 @app.route('/')
@@ -18,7 +21,18 @@ def run():
 def keep_alive():
     t = Thread(target=run)
     t.start()
+credenciales_json = os.getenv('FIREBASE_CREDENTIALS')
+firebase_url = os.getenv('FIREBASE_URL')
 
+if credenciales_json and firebase_url:
+    cred_dict = json.loads(credenciales_json)
+    cred = credentials.Certificate(cred_dict)
+    firebase_admin.initialize_app(cred, {
+        'databaseURL': firebase_url
+    })
+    print("📂 Base de datos ministerial en línea.")
+else:
+    print("⚠️ ADVERTENCIA: Faltan credenciales burocráticas de Firebase en Render.")
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True 
