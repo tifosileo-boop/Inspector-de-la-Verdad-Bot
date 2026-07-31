@@ -276,8 +276,7 @@ async def queja(ctx, *, texto=None):
         "Su descontento ha sido registrado. Un oficial de lealtad lo visitará pronto para 'charlar'.",
         "Formulario 404: Empatía no encontrada. Intente de nuevo el año que viene.",
         "Su reclamo fue derivado al sector de 'Asuntos Inexistentes'.",
-        "Anotado en mi máquina de escribir invisible. Siga circulando."
-    ]
+        "Anotado en mi máquina de escribir invisible. Siga circulando."]
 
     if canal_mods:
         await canal_mods.send(f"📩 **NUEVA QUEJA:**\n**Usuario:** {ctx.author.mention}\n**Asunto:** {texto}")
