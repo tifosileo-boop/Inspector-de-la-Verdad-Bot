@@ -283,17 +283,30 @@ async def queja(ctx, *, texto=None):
         await canal_mods.send(f"📩 **NUEVA QUEJA:**\n**Usuario:** {ctx.author.mention}\n**Asunto:** {texto}")
         await ctx.send(f"📋 {random.choice(respuestas_burocraticas)}")
 
-@bot.command()
-async def presente(ctx):
-    usuario_id = str(ctx.author.id)
+@bot.event
+async def on_ready():
+    print(f'Inspectora en línea. Logueada como {bot.user}')
+    try:
+        sincronizados = await bot.tree.sync()
+        print(f"✅ ¡Éxito! Se sincronizaron {len(sincronizados)} comandos de aplicación.")
+    except Exception as e:
+        print(f"⚠️ Falla burocrática al sincronizar comandos: {e}")
+
+
+@bot.tree.command(name="presente", description="Fichá tu lealtad diaria al Estado. Tenés 32hs de margen antes de perder la racha.")
+async def presente(interaction: discord.Interaction):
+    usuario_id = str(interaction.user.id)
     ref = db.reference(f'/fichadas_lealtad/{usuario_id}')
     
     datos = ref.get()
-    ahora_utc = datetime.datetime.now(datetime.timezone.utc)
+    
+    zona_arg = datetime.timezone(datetime.timedelta(hours=-3))
+    ahora = datetime.datetime.now(zona_arg)
+    fecha_hoy = ahora.date()
     
     nueva_cantidad = 1
     mensaje_extra = ""
-
+    
     if datos is not None:
         if isinstance(datos, int):
             cantidad_actual = datos
@@ -304,21 +317,28 @@ async def presente(ctx):
             
             if ultima_vez_str:
                 ultima_vez = datetime.datetime.fromisoformat(ultima_vez_str)
-                diferencia = ahora_utc - ultima_vez
+                fecha_ultima = ultima_vez.date()
                 
-                if diferencia.total_seconds() > 86400:
-                    nueva_cantidad = 1
-                    mensaje_extra = "\n⚠️ **ALERTA DE INACTIVIDAD:** Pasaron más de 24 horas desde tu última fichada. El Ministerio ha reiniciado tu antigüedad a cero."
-                else:
+                diferencia_horas = (ahora - ultima_vez).total_seconds() / 3600
+                
+                if fecha_hoy == fecha_ultima:
+                    # Ephemeral hace que el mensaje sea "invisible" para el resto
+                    await interaction.response.send_message("⏳ **CALMATE, CIUDADANO:** Ya demostraste tu lealtad hoy. Volvé mañana.", ephemeral=True)
+                    return
+                elif diferencia_horas <= 32:
                     nueva_cantidad = cantidad_actual + 1
+                else:
+                    nueva_cantidad = 1
+                    mensaje_extra = "\n⚠️ **ALERTA DE VAGANCIA:** Pasaron más de 32 horas desde tu última fichada. El Ministerio ha reiniciado tu antigüedad a cero."
             else:
                 nueva_cantidad = cantidad_actual + 1
+
     ref.set({
         "cantidad": nueva_cantidad,
-        "ultima_vez": ahora_utc.isoformat()
+        "ultima_vez": ahora.isoformat()
     })
     
-    await ctx.send(f"🫡 **REGISTRO DE LEALTAD:**\nCiudadano {ctx.author.mention}, esta es su ficha N° {nueva_cantidad}. ¡Su trabajo no será olvidado!{mensaje_extra}")
+    await interaction.response.send_message(f"🫡 **REGISTRO DE LEALTAD:**\nCiudadano {interaction.user.mention}, esta es su ficha N° {nueva_cantidad}. ¡Su trabajo no será olvidado!{mensaje_extra}")
 
 @bot.command()
 async def examen(ctx):
