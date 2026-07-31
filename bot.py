@@ -88,9 +88,6 @@ conteo_reportes = {}
 @bot.command()
 async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
     ID_CANAL_MODS = 1394422101129167039 
-    
-    roles_autorizados = ["『 Presidente 』", "Ministerio de la Verdad", "Ministerio de Seguridad", "Jefe de Gabinete", "『 Senadores 』"]
-    tiene_permiso = ctx.author.id == ctx.guild.owner_id or any(rol.name in roles_autorizados for rol in ctx.author.roles)
 
     if sospechoso is None or motivo is None:
         await ctx.send("❌ **ERROR DE PROTOCOLO:** Tenés que mencionar a alguien y dar un motivo. \nEjemplo: `!reportar @Usuario Intento de motín`.")
@@ -118,19 +115,19 @@ async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
         await ctx.send("❌ **ACCESO DENEGADO:** No tenés la jerarquía para levantar actas. Desista o será reportado.")
         return
 
-    canal_mods = bot.get_channel(ID_CANAL_MODS)
+   canal_mods = bot.get_channel(1394422101129167039)
     
-    sospechoso_id = str(sospechoso.id)
-    ref = db.reference(f'/conteo_reportes/{sospechoso_id}')
-    
-    cantidad_actual = ref.get()
-    if cantidad_actual is None:
-        cantidad_actual = 0
+    try:
+        sospechoso_id = str(sospechoso.id)
+        ref = db.reference(f'/conteo_reportes/{sospechoso_id}')
         
-    nueva_cantidad = cantidad_actual + 1
+        cantidad_actual = ref.get()
+        if cantidad_actual is None:
+            cantidad_actual = 0
+            
+        nueva_cantidad = cantidad_actual + 1
 
-    if canal_mods:
-        try:
+        if canal_mods:
             if nueva_cantidad >= 3:
                 try:
                     await sospechoso.send("🛑 **NOTIFICACIÓN DEL MINISTERIO:** Has acumulado demasiadas denuncias ciudadanas. El Estado ha decidido deportarte temporalmente (Kick).")
@@ -140,7 +137,7 @@ async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
                 await sospechoso.kick(reason=f"Acumulación de 3 reportes. Último motivo: {motivo}")
                 await canal_mods.send(f"🚨 **¡DEPORTACIÓN AUTOMÁTICA!** 🚨\nEl individuo {sospechoso.mention} acumuló 3 reportes y fue expulsado (Kick) de la red.\n**Último denunciante:** {ctx.author.mention}\n**Último motivo:** {motivo}")
                 await ctx.send(f"✅ Recibido, {ctx.author.mention}. El sospechoso superó el límite de faltas y acaba de ser deportado.")
-            
+                
                 ref.delete()
             else:
                 ref.set(nueva_cantidad)
@@ -154,10 +151,11 @@ async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
                 )
                 await canal_mods.send(mensaje_alerta)
                 await ctx.send(f"✅ Recibido, {ctx.author.mention}. La infracción (Falta {nueva_cantidad}/3) fue sumada al expediente del ciudadano.")
-        except Exception as e:
-            await ctx.send(f"⚠️ Error técnico en la burocracia: {e}")
-    else:
-        await ctx.send("❌ **ERROR DE SISTEMA:** No encuentro el canal de moderación.")
+        else:
+            await ctx.send("❌ **ERROR DE SISTEMA:** No encuentro el canal de moderación.")
+
+    except Exception as e:
+        await ctx.send(f"⚠️ **Falla crítica en el Archivo General (Firebase):** {e}")
 @bot.command()
 async def aislar(ctx, alborotador: discord.Member = None, *, motivo="Alteración del orden público"):
     roles_autorizados = ["『 Presidente 』", "Ministerio de Seguridad", "Jefe de Gabinete"]
