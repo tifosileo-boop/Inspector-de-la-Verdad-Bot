@@ -115,7 +115,7 @@ async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
         await ctx.send("❌ **ACCESO DENEGADO:** No tenés la jerarquía para levantar actas. Desista o será reportado.")
         return
 
-   canal_mods = bot.get_channel(1394422101129167039)
+    canal_mods = bot.get_channel(1394422101129167039)
     
     try:
         sospechoso_id = str(sospechoso.id)
