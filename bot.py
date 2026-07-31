@@ -89,7 +89,6 @@ conteo_reportes = {}
 async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
     ID_CANAL_MODS = 1394422101129167039 
     
-    # 1. QUIÉN PUEDE USAR EL COMANDO
     roles_autorizados = ["『 Presidente 』", "Ministerio de la Verdad", "Ministerio de Seguridad", "Jefe de Gabinete", "『 Senadores 』"]
     tiene_permiso = ctx.author.id == ctx.guild.owner_id or any(rol.name in roles_autorizados for rol in ctx.author.roles)
     
@@ -99,6 +98,13 @@ async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
 
     if sospechoso is None or motivo is None:
         await ctx.send("❌ **ERROR DE PROTOCOLO:** Tenés que mencionar a alguien y dar un motivo. \nEjemplo: `!reportar @Usuario Intento de motín`.")
+        return
+    if sospechoso == ctx.author or sospechoso == bot.user:
+        await ctx.send("❌ **ERROR:** No podés reportarte a vos mismo ni a la Inspectora. Circule.")
+        return
+        
+    if sospechoso.id == ctx.guild.owner_id:
+        await ctx.send("❌ **ALERTA DE SEDICIÓN:** ¿Intentando denunciar a Xene? El líder supremo es intocable.")
         return
         
     roles_inmunes = ["『 Presidente 』", "Ministerio de la Verdad", "Jefe de Gabinete", "『 Senadores 』"]
