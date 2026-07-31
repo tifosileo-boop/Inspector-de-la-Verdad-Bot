@@ -285,7 +285,7 @@ async def queja(ctx, *, texto=None):
 @bot.event
 async def on_ready():
     print(f'Inspectora en línea. Logueada como {bot.user}')
-   try:
+    try:
         mi_servidor = discord.Object(id=1394371062111666182) 
         bot.tree.copy_global_to(guild=mi_servidor)
         sincronizados = await bot.tree.sync(guild=mi_servidor)
