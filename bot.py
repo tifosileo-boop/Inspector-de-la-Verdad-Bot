@@ -286,8 +286,10 @@ async def queja(ctx, *, texto=None):
 async def on_ready():
     print(f'Inspectora en línea. Logueada como {bot.user}')
     try:
-        sincronizados = await bot.tree.sync()
-        print(f"✅ ¡Éxito! Se sincronizaron {len(sincronizados)} comandos de aplicación.")
+        mi_servidor = discord.Object(id=1394371062111666182)
+        bot.tree.copy_global_to(guild=mi_servidor)
+        sincronizados = await bot.tree.sync(guild=mi_servidor)
+        print(f"✅ ¡Éxito! Se sincronizaron {len(sincronizados)} comandos al instante.")
     except Exception as e:
         print(f"⚠️ Falla burocrática al sincronizar comandos: {e}")
 @bot.tree.command(name="presente", description="Fichá tu lealtad diaria al Estado. Tenés 32hs de margen antes de perder la racha.")
