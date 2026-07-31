@@ -89,53 +89,113 @@ conteo_reportes = {}
 async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
     ID_CANAL_MODS = 1394422101129167039 
     
+    # 1. QUIÉN PUEDE USAR EL COMANDO
+    roles_autorizados = ["『 Presidente 』", "Ministerio de la Verdad", "Ministerio de Seguridad", "Jefe de Gabinete", "『 Senadores 』"]
+    tiene_permiso = ctx.author.id == ctx.guild.owner_id or any(rol.name in roles_autorizados for rol in ctx.author.roles)
+    
+    if not tiene_permiso:
+        await ctx.send("❌ **ACCESO DENEGADO:** No tenés la jerarquía para levantar actas. Desista o será reportado.")
+        return
+
     if sospechoso is None or motivo is None:
-        await ctx.send("❌ **ERROR DE PROTOCOLO:** Tenés que mencionar a alguien y dar un motivo. \nEjemplo: `!reportar @Usuario Es un bicho`.")
+        await ctx.send("❌ **ERROR DE PROTOCOLO:** Tenés que mencionar a alguien y dar un motivo. \nEjemplo: `!reportar @Usuario Intento de motín`.")
         return
         
-    if sospechoso == ctx.author or sospechoso == bot.user:
-        await ctx.send("❌ **ERROR:** No podés reportarte a vos mismo ni a la Inspectora. Circule.")
+    roles_inmunes = ["『 Presidente 』", "Ministerio de la Verdad", "Jefe de Gabinete", "『 Senadores 』"]
+    es_inmune = sospechoso.id == ctx.guild.owner_id or sospechoso == bot.user or any(rol.name in roles_inmunes for rol in sospechoso.roles)
+
+    if es_inmune:
+        await ctx.send("❌ **ALERTA DE SEDICIÓN:** El individuo posee fueros y no puede ser reportado. Cuidado con a quién acusás, ciudadano.")
         return
 
     canal_mods = bot.get_channel(ID_CANAL_MODS)
     
-    if sospechoso.id not in conteo_reportes:
-        conteo_reportes[sospechoso.id] = 1
-    else:
-        conteo_reportes[sospechoso.id] += 1
+    sospechoso_id = str(sospechoso.id)
+    ref = db.reference(f'/conteo_reportes/{sospechoso_id}')
+    
+    cantidad_actual = ref.get()
+    if cantidad_actual is None:
+        cantidad_actual = 0
         
-    cantidad = conteo_reportes[sospechoso.id]
+    nueva_cantidad = cantidad_actual + 1
 
     if canal_mods:
         try:
-            if cantidad >= 3:
+        if nueva_cantidad >= 3:
                 try:
-                    await sospechoso.send("🛑 **NOTIFICACIÓN DEL MINISTERIO:** Has acumulado demasiadas denuncias ciudadanas por disidencia. El Estado ha decidido exiliarte permanentemente.")
+                    await sospechoso.send("🛑 **NOTIFICACIÓN DEL MINISTERIO:** Has acumulado demasiadas denuncias ciudadanas. El Estado ha decidido deportarte temporalmente (Kick).")
                 except:
                     pass 
                     
-                await sospechoso.ban(reason=f"Acumulación de 3 reportes ciudadanos. Último motivo: {motivo}")
-                await canal_mods.send(f"🚨 **¡EXILIO AUTOMÁTICO!** 🚨\nEl individuo {sospechoso.mention} acumuló 3 reportes y fue purgado de la red.\n**Último denunciante:** {ctx.author.mention}\n**Último motivo:** {motivo}")
-                await ctx.send(f"✅ Recibido, {ctx.author.mention}. El sospechoso había acumulado demasiadas denuncias y acaba de ser exiliado. ¡La democracia te lo agradece!")
-
-                conteo_reportes.pop(sospechoso.id, None)
-                
+                await sospechoso.kick(reason=f"Acumulación de 3 reportes. Último motivo: {motivo}")
+                await canal_mods.send(f"🚨 **¡DEPORTACIÓN AUTOMÁTICA!** 🚨\nEl individuo {sospechoso.mention} acumuló 3 reportes y fue expulsado (Kick) de la red.\n**Último denunciante:** {ctx.author.mention}\n**Último motivo:** {motivo}")
+                await ctx.send(f"✅ Recibido, {ctx.author.mention}. El sospechoso superó el límite de faltas y acaba de ser deportado.")
+            
+                ref.delete()
             else:
+                ref.set(nueva_cantidad)
                 mensaje_alerta = (
                     f"🚨 **REPORTE DE DISIDENCIA RECIBIDO** 🚨\n"
-                    f"El Ministerio de la Obediencia ha sido notificado. (Advertencia {cantidad}/3)\n"
+                    f"El Ministerio de la Obediencia ha sido notificado. (Advertencia {nueva_cantidad}/3)\n"
                     f"**Denunciante:** {ctx.author.mention}\n"
                     f"**Sospechoso:** {sospechoso.mention}\n"
                     f"**Motivo:** {motivo}\n\n"
                     f"*La Libertad agradece tu cooperación...*"
                 )
                 await canal_mods.send(mensaje_alerta)
-                await ctx.send(f"✅ Recibido, {ctx.author.mention}. La infracción (Falta {cantidad}/3) fue sumada al expediente del ciudadano.")
+                await ctx.send(f"✅ Recibido, {ctx.author.mention}. La infracción (Falta {nueva_cantidad}/3) fue sumada al expediente del ciudadano.")
         except Exception as e:
             await ctx.send(f"⚠️ Error técnico en la burocracia: {e}")
     else:
-        await ctx.send("❌ **ERROR DE SISTEMA:** No encuentro el canal de moderación. Revisá el ID en el código.")
+        await ctx.send("❌ **ERROR DE SISTEMA:** No encuentro el canal de moderación.")
+@bot.command()
+async def aislar(ctx, alborotador: discord.Member = None, *, motivo="Alteración del orden público"):
+    roles_autorizados = ["『 Presidente 』", "Ministerio de Seguridad", "Jefe de Gabinete"]
+    tiene_permiso = ctx.author.id == ctx.guild.owner_id or any(rol.name in roles_autorizados for rol in ctx.author.roles)
+    
+    if not tiene_permiso:
+        await ctx.send("❌ **ACCESO DENEGADO:** No tenés la chapa necesaria para aplicar esta medida cautelar.")
+        return
 
+    if alborotador is None:
+        await ctx.send("❌ **ERROR:** Tenés que mencionar al instigador. \nEjemplo: `!aislar @Usuario Intento de piquete`.")
+        return
+
+    roles_inmunes = ["『 Presidente 』", "Jefe de Gabinete", "『 Senadores 』", "Ministerio de la Verdad"]
+    es_inmune = alborotador.id == ctx.guild.owner_id or alborotador == bot.user or any(rol.name in roles_inmunes for rol in alborotador.roles)
+
+    if es_inmune:
+        await ctx.send("❌ **ERROR:** El ciudadano posee fueros. No podés mandarlo al calabozo.")
+        return
+
+    try:
+        tiempo_aislamiento = datetime.timedelta(hours=1)
+        await alborotador.timeout(tiempo_aislamiento, reason=motivo)
+        
+        await ctx.send(f"🔒 **CALABOZO ACTIVO:** El ciudadano {alborotador.mention} fue aislado de la sociedad por 1 hora. \n**Motivo:** {motivo}\nQue reflexione sobre su traición al Estado.")
+    except Exception as e:
+        await ctx.send(f"⚠️ **Error burocrático:** {e}")
+@bot.command()
+async def indulto(ctx, ciudadano: discord.Member = None):
+    roles_autorizados = ["『 Presidente 』", "Jefe de Gabinete"] 
+    tiene_permiso = ctx.author.id == ctx.guild.owner_id or any(rol.name in roles_autorizados for rol in ctx.author.roles)
+    
+    if not tiene_permiso:
+        await ctx.send("❌ **ACCESO DENEGADO:** Solo el Poder Ejecutivo puede otorgar indultos.")
+        return
+
+    if ciudadano is None:
+        await ctx.send("❌ **ERROR:** Tenés que mencionar al ciudadano a indultar. \nEjemplo: `!indulto @Usuario`")
+        return
+
+    ciudadano_id = str(ciudadano.id)
+    ref = db.reference(f'/conteo_reportes/{ciudadano_id}')
+    
+    if ref.get() is None:
+        await ctx.send(f"📝 El ciudadano {ciudadano.mention} tiene su legajo intachable. No hay faltas que perdonar.")
+    else:
+        ref.delete()
+        await ctx.send(f"🕊️ **INDULTO OTORGADO:** El historial de faltas de {ciudadano.mention} ha sido eliminado. Volvió a ser un ciudadano libre de culpas.")
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
@@ -217,13 +277,40 @@ async def queja(ctx, *, texto=None):
 
 @bot.command()
 async def presente(ctx):
-    usuario = ctx.author.name
-    if usuario not in fichadas_lealtad:
-        fichadas_lealtad[usuario] = 1
-    else:
-        fichadas_lealtad[usuario] += 1
+    usuario_id = str(ctx.author.id)
+    ref = db.reference(f'/fichadas_lealtad/{usuario_id}')
     
-    await ctx.send(f"🫡 **REGISTRO DE LEALTAD:**\nCiudadano {ctx.author.mention}, esta es su ficha N° {fichadas_lealtad[usuario]}. ¡Su trabajo no será olvidado!")
+    datos = ref.get()
+    ahora_utc = datetime.datetime.now(datetime.timezone.utc)
+    
+    nueva_cantidad = 1
+    mensaje_extra = ""
+
+    if datos is not None:
+        if isinstance(datos, int):
+            cantidad_actual = datos
+            nueva_cantidad = cantidad_actual + 1
+        else:
+            ultima_vez_str = datos.get("ultima_vez")
+            cantidad_actual = datos.get("cantidad", 0)
+            
+            if ultima_vez_str:
+                ultima_vez = datetime.datetime.fromisoformat(ultima_vez_str)
+                diferencia = ahora_utc - ultima_vez
+                
+                if diferencia.total_seconds() > 86400:
+                    nueva_cantidad = 1
+                    mensaje_extra = "\n⚠️ **ALERTA DE INACTIVIDAD:** Pasaron más de 24 horas desde tu última fichada. El Ministerio ha reiniciado tu antigüedad a cero."
+                else:
+                    nueva_cantidad = cantidad_actual + 1
+            else:
+                nueva_cantidad = cantidad_actual + 1
+    ref.set({
+        "cantidad": nueva_cantidad,
+        "ultima_vez": ahora_utc.isoformat()
+    })
+    
+    await ctx.send(f"🫡 **REGISTRO DE LEALTAD:**\nCiudadano {ctx.author.mention}, esta es su ficha N° {nueva_cantidad}. ¡Su trabajo no será olvidado!{mensaje_extra}")
 
 @bot.command()
 async def examen(ctx):
