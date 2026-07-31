@@ -452,7 +452,17 @@ async def on_guild_channel_create(channel):
                         await canal_alertas.send(f"🚨 **¡INTRUSIÓN NEUTRALIZADA!** El individuo {atacante.mention} intentó desmantelar el servidor y fue ejecutado en el acto.")
                 except Exception as e:
                     print(f"Error burocrático al detener nuke: {e}")
-            
+@bot.command()
+async def sinc(ctx):
+    try:
+        mi_servidor = discord.Object(id=1394371062111666182)
+        bot.tree.copy_global_to(guild=mi_servidor)
+        sincronizados = await bot.tree.sync(guild=mi_servidor)
+        
+        await ctx.send(f"✅ Trámite aprobado: {len(sincronizados)} comandos de aplicación sincronizados al instante en este servidor.")
+    except Exception as e:
+        await ctx.send(f"⚠️ Falla en la matrix burocrática: {e}")
+        
 @bot.event
 async def on_ready():
     print(f'Inspectora en linea. Logueada como {bot.user}')
