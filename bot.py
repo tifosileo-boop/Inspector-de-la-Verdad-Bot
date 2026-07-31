@@ -121,7 +121,7 @@ async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
 
     if canal_mods:
         try:
-        if nueva_cantidad >= 3:
+            if nueva_cantidad >= 3:
                 try:
                     await sospechoso.send("🛑 **NOTIFICACIÓN DEL MINISTERIO:** Has acumulado demasiadas denuncias ciudadanas. El Estado ha decidido deportarte temporalmente (Kick).")
                 except:
