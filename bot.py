@@ -91,27 +91,31 @@ async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
     
     roles_autorizados = ["『 Presidente 』", "Ministerio de la Verdad", "Ministerio de Seguridad", "Jefe de Gabinete", "『 Senadores 』"]
     tiene_permiso = ctx.author.id == ctx.guild.owner_id or any(rol.name in roles_autorizados for rol in ctx.author.roles)
-    
-    if not tiene_permiso:
-        await ctx.send("❌ **ACCESO DENEGADO:** No tenés la jerarquía para levantar actas. Desista o será reportado.")
-        return
 
     if sospechoso is None or motivo is None:
         await ctx.send("❌ **ERROR DE PROTOCOLO:** Tenés que mencionar a alguien y dar un motivo. \nEjemplo: `!reportar @Usuario Intento de motín`.")
         return
-    if sospechoso == ctx.author or sospechoso == bot.user:
-        await ctx.send("❌ **ERROR:** No podés reportarte a vos mismo ni a la Inspectora. Circule.")
-        return
-        
+
     if sospechoso.id == ctx.guild.owner_id:
-        await ctx.send("❌ **ALERTA DE SEDICIÓN:** ¿Intentando denunciar a Xene? El líder supremo es intocable.")
+        await ctx.send("❌ **ALERTA DE SEDICIÓN:** ¿Intentando denunciar a Xene? El Presidente es intocable.")
         return
-        
+
     roles_inmunes = ["『 Presidente 』", "Ministerio de la Verdad", "Jefe de Gabinete", "『 Senadores 』"]
-    es_inmune = sospechoso.id == ctx.guild.owner_id or sospechoso == bot.user or any(rol.name in roles_inmunes for rol in sospechoso.roles)
+    es_inmune = sospechoso == bot.user or any(rol.name in roles_inmunes for rol in sospechoso.roles)
 
     if es_inmune:
         await ctx.send("❌ **ALERTA DE SEDICIÓN:** El individuo posee fueros y no puede ser reportado. Cuidado con a quién acusás, ciudadano.")
+        return
+
+    if sospechoso == ctx.author:
+        await ctx.send("❌ **ERROR:** No podés reportarte a vos mismo. Circule.")
+        return
+
+    roles_autorizados = ["『 Presidente 』", "Ministerio de la Verdad", "Ministerio de Seguridad", "Jefe de Gabinete", "『 Senadores 』"]
+    tiene_permiso = ctx.author.id == ctx.guild.owner_id or any(rol.name in roles_autorizados for rol in ctx.author.roles)
+    
+    if not tiene_permiso:
+        await ctx.send("❌ **ACCESO DENEGADO:** No tenés la jerarquía para levantar actas. Desista o será reportado.")
         return
 
     canal_mods = bot.get_channel(ID_CANAL_MODS)
