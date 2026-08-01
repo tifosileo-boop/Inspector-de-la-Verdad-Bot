@@ -440,7 +440,7 @@ async def on_guild_channel_create(channel):
             registro_creacion_canales[atacante.id].append(tiempo_actual)        
             creaciones_recientes = [t for t in registro_creacion_canales[atacante.id] if (tiempo_actual - t).total_seconds() < 15]
             registro_creacion_canales[atacante.id] = creaciones_recientes
-            if len(acciones_recientes) >= 2:
+            if len(creaciones_recientes) >= 2:
                 try:
                     try:
                         await atacante.send("Has sido ejecutado en el acto por intento de sabotaje a la infraestructura del servidor. Tu traición no será olvidada. Hasta nunca, idiota.")
