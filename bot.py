@@ -483,7 +483,52 @@ async def reportar(interaction: discord.Interaction, sospechoso: discord.Member,
         await canal_oficina.send(expediente)
     else:
         print("⚠️ Error burocrático: La Inspectora no encuentra la oficina de denuncias. Revisá el ID.")
+
+@bot.tree.command(name="aislar", description="Manda a un disidente al calabozo (Timeout temporal).")
+async def aislar(interaction: discord.Interaction, sospechoso: discord.Member, minutos: int, motivo: str):
+    if not interaction.user.guild_permissions.moderate_members:
+        await interaction.response.send_message("❌ Alto ahí. Te faltan sellos ministeriales para aislar gente.", ephemeral=True)
+        return
+    try:
+        tiempo_aislado = datetime.timedelta(minutes=minutos)
+        await sospechoso.timeout(tiempo_aislado, reason=motivo)
+        await interaction.response.send_message(f"🔨 {sospechoso.mention} fue aislado de la sociedad por {minutos} minutos.\n**Cargo:** {motivo}")
+    except Exception as e:
+        await interaction.response.send_message(f"⚠️ Error al procesar la condena: {e}", ephemeral=True)
+
+@bot.tree.command(name="advertir", description="Emite una advertencia formal a un ciudadano.")
+async def advertir(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str):
+    if not interaction.user.guild_permissions.moderate_members:
+        await interaction.response.send_message("❌ No tenés jurisdicción para emitir advertencias.", ephemeral=True)
+        return
+    try:
+        await sospechoso.send(f"⚠️ **Atención del Ministerio de la Verdad** ⚠️\nRecibiste una advertencia oficial en el servidor.\n**Cargo:** {motivo}")
+    except discord.Forbidden:
+        pass
+    await interaction.response.send_message(f"📝 Se emitió un acta de advertencia para {sospechoso.mention}.\n**Motivo:** {motivo}")
     
+@bot.tree.command(name="expulsar", description="Deporta a un disidente del servidor (Kick).")
+async def expulsar(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str = "Traición al Estado"):
+    if not interaction.user.guild_permissions.kick_members:
+        await interaction.response.send_message("❌ Te faltan credenciales para deportar ciudadanos.", ephemeral=True)
+        return
+    try:
+        await sospechoso.kick(reason=motivo)
+        await interaction.response.send_message(f"👢 {sospechoso.mention} fue deportado del territorio.\n**Motivo:** {motivo}")
+    except Exception as e:
+        await interaction.response.send_message(f"⚠️ Falla burocrática al expulsar: {e}", ephemeral=True)
+
+@bot.tree.command(name="banear", description="Exilia permanentemente a un enemigo del Estado (Ban).")
+async def banear(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str = "Enemigo público"):
+    if not interaction.user.guild_permissions.ban_members:
+        await interaction.response.send_message("❌ No tenés el rango necesario para firmar exilios permanentes.", ephemeral=True)
+        return
+    
+    try:
+        await sospechoso.ban(reason=motivo)
+        await interaction.response.send_message(f"🛑 {sospechoso.mention} fue exiliado de por vida.No será recordado... \n**Cargo:** {motivo}")
+    except Exception as e:
+        await interaction.response.send_message(f"⚠️ Error procesal al aplicar el ban: {e}", ephemeral=True)
 @bot.event
 async def on_ready():
     print(f'Inspectora en linea. Logueada como {bot.user}')
