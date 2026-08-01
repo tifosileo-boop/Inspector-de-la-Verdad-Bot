@@ -462,7 +462,24 @@ async def sinc(ctx):
         await ctx.send(f"✅ Trámite aprobado: {len(sincronizados)} comandos de aplicación sincronizados al instante en este servidor.")
     except Exception as e:
         await ctx.send(f"⚠️ Falla en la matrix burocrática: {e}")
-        
+
+@bot.tree.command(name="reportar", description="Denunciá a un disidente ante el Ministerio de la Verdad.")
+async def reportar(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str):
+    
+    expediente = (
+        f"🚨 **NUEVO REPORTE REGISTRADO** 🚨\n"
+        f"**Denunciante:** {interaction.user.mention}\n"
+        f"**Acusado:** {sospechoso.mention}\n"
+        f"**Cargo imputado:** {motivo}"
+    )
+    
+    await interaction.response.send_message(
+        f"✅ Tu denuncia contra {sospechoso.display_name} fue radicada con éxito. El Ministerio evaluará su caso.", 
+        ephemeral=True
+    )
+    
+    await interaction.channel.send(expediente)
+    
 @bot.event
 async def on_ready():
     print(f'Inspectora en linea. Logueada como {bot.user}')
