@@ -477,8 +477,12 @@ async def reportar(interaction: discord.Interaction, sospechoso: discord.Member,
         f"✅ Tu denuncia contra {sospechoso.display_name} fue radicada con éxito. El Ministerio evaluará su caso.", 
         ephemeral=True
     )
+    canal_oficina = bot.get_channel(1394422101129167039) 
     
-    await interaction.channel.send(expediente)
+    if canal_oficina:
+        await canal_oficina.send(expediente)
+    else:
+        print("⚠️ Error burocrático: La Inspectora no encuentra la oficina de denuncias. Revisá el ID.")
     
 @bot.event
 async def on_ready():
