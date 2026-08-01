@@ -83,79 +83,6 @@ async def transmision_oficial():
         
         await canal.send(mensaje_sorteado)
 
-conteo_reportes = {}
-
-@bot.command()
-async def reportar(ctx, sospechoso: discord.Member = None, *, motivo = None):
-    ID_CANAL_MODS = 1394422101129167039 
-
-    if sospechoso is None or motivo is None:
-        await ctx.send("❌ **ERROR DE PROTOCOLO:** Tenés que mencionar a alguien y dar un motivo. \nEjemplo: `!reportar @Usuario Intento de motín`.")
-        return
-
-    if sospechoso.id == ctx.guild.owner_id:
-        await ctx.send("❌ **ALERTA DE SEDICIÓN:** ¿Intentando denunciar a Xene? El Presidente es intocable.")
-        return
-
-    roles_inmunes = ["『 Presidente 』", "Ministerio de la Verdad", "Jefe de Gabinete", "『 Senadores 』"]
-    es_inmune = sospechoso == bot.user or any(rol.name in roles_inmunes for rol in sospechoso.roles)
-
-    if es_inmune:
-        await ctx.send("❌ **ALERTA DE SEDICIÓN:** El individuo posee fueros y no puede ser reportado. Cuidado con a quién acusás, ciudadano.")
-        return
-
-    if sospechoso == ctx.author:
-        await ctx.send("❌ **ERROR:** No podés reportarte a vos mismo. Circule.")
-        return
-
-    roles_autorizados = ["『 Presidente 』", "Ministerio de la Verdad", "Ministerio de Seguridad", "Jefe de Gabinete", "『 Senadores 』"]
-    tiene_permiso = ctx.author.id == ctx.guild.owner_id or any(rol.name in roles_autorizados for rol in ctx.author.roles)
-    
-    if not tiene_permiso:
-        await ctx.send("❌ **ACCESO DENEGADO:** No tenés la jerarquía para levantar actas. Desista o será reportado.")
-        return
-
-    canal_mods = bot.get_channel(1394422101129167039)
-    
-    try:
-        sospechoso_id = str(sospechoso.id)
-        ref = db.reference(f'/conteo_reportes/{sospechoso_id}')
-        
-        cantidad_actual = ref.get()
-        if cantidad_actual is None:
-            cantidad_actual = 0
-            
-        nueva_cantidad = cantidad_actual + 1
-
-        if canal_mods:
-            if nueva_cantidad >= 3:
-                try:
-                    await sospechoso.send("🛑 **NOTIFICACIÓN DEL MINISTERIO:** Has acumulado demasiadas denuncias ciudadanas. El Estado ha decidido deportarte temporalmente (Kick).")
-                except:
-                    pass 
-                    
-                await sospechoso.kick(reason=f"Acumulación de 3 reportes. Último motivo: {motivo}")
-                await canal_mods.send(f"🚨 **¡DEPORTACIÓN AUTOMÁTICA!** 🚨\nEl individuo {sospechoso.mention} acumuló 3 reportes y fue expulsado (Kick) de la red.\n**Último denunciante:** {ctx.author.mention}\n**Último motivo:** {motivo}")
-                await ctx.send(f"✅ Recibido, {ctx.author.mention}. El sospechoso superó el límite de faltas y acaba de ser deportado.")
-                
-                ref.delete()
-            else:
-                ref.set(nueva_cantidad)
-                mensaje_alerta = (
-                    f"🚨 **REPORTE DE DISIDENCIA RECIBIDO** 🚨\n"
-                    f"El Ministerio de la Obediencia ha sido notificado. (Advertencia {nueva_cantidad}/3)\n"
-                    f"**Denunciante:** {ctx.author.mention}\n"
-                    f"**Sospechoso:** {sospechoso.mention}\n"
-                    f"**Motivo:** {motivo}\n\n"
-                    f"*La Libertad agradece tu cooperación...*"
-                )
-                await canal_mods.send(mensaje_alerta)
-                await ctx.send(f"✅ Recibido, {ctx.author.mention}. La infracción (Falta {nueva_cantidad}/3) fue sumada al expediente del ciudadano.")
-        else:
-            await ctx.send("❌ **ERROR DE SISTEMA:** No encuentro el canal de moderación.")
-
-    except Exception as e:
-        await ctx.send(f"⚠️ **Falla crítica en el Archivo General (Firebase):** {e}")
 @bot.command()
 async def aislar(ctx, alborotador: discord.Member = None, *, motivo="Alteración del orden público"):
     roles_autorizados = ["『 Presidente 』", "Ministerio de Seguridad", "Jefe de Gabinete"]
@@ -183,27 +110,7 @@ async def aislar(ctx, alborotador: discord.Member = None, *, motivo="Alteración
         await ctx.send(f"🔒 **CALABOZO ACTIVO:** El ciudadano {alborotador.mention} fue aislado de la sociedad por 1 hora. \n**Motivo:** {motivo}\nQue reflexione sobre su traición al Estado.")
     except Exception as e:
         await ctx.send(f"⚠️ **Error burocrático:** {e}")
-@bot.command()
-async def indulto(ctx, ciudadano: discord.Member = None):
-    roles_autorizados = ["『 Presidente 』", "Jefe de Gabinete"] 
-    tiene_permiso = ctx.author.id == ctx.guild.owner_id or any(rol.name in roles_autorizados for rol in ctx.author.roles)
-    
-    if not tiene_permiso:
-        await ctx.send("❌ **ACCESO DENEGADO:** Solo el Poder Ejecutivo puede otorgar indultos.")
-        return
 
-    if ciudadano is None:
-        await ctx.send("❌ **ERROR:** Tenés que mencionar al ciudadano a indultar. \nEjemplo: `!indulto @Usuario`")
-        return
-
-    ciudadano_id = str(ciudadano.id)
-    ref = db.reference(f'/conteo_reportes/{ciudadano_id}')
-    
-    if ref.get() is None:
-        await ctx.send(f"📝 El ciudadano {ciudadano.mention} tiene su legajo intachable. No hay faltas que perdonar.")
-    else:
-        ref.delete()
-        await ctx.send(f"🕊️ **INDULTO OTORGADO:** El historial de faltas de {ciudadano.mention} ha sido eliminado. Volvió a ser un ciudadano libre de culpas.")
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
@@ -495,17 +402,6 @@ async def aislar(interaction: discord.Interaction, sospechoso: discord.Member, m
         await interaction.response.send_message(f"🔨 {sospechoso.mention} fue aislado de la sociedad por {minutos} minutos.\n**Cargo:** {motivo}")
     except Exception as e:
         await interaction.response.send_message(f"⚠️ Error al procesar la condena: {e}", ephemeral=True)
-
-@bot.tree.command(name="advertir", description="Emite una advertencia formal a un ciudadano.")
-async def advertir(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str):
-    if not interaction.user.guild_permissions.moderate_members:
-        await interaction.response.send_message("❌ No tenés jurisdicción para emitir advertencias.", ephemeral=True)
-        return
-    try:
-        await sospechoso.send(f"⚠️ **Atención del Ministerio de la Verdad** ⚠️\nRecibiste una advertencia oficial en el servidor.\n**Cargo:** {motivo}")
-    except discord.Forbidden:
-        pass
-    await interaction.response.send_message(f"📝 Se emitió un acta de advertencia para {sospechoso.mention}.\n**Motivo:** {motivo}")
     
 @bot.tree.command(name="expulsar", description="Deporta a un disidente del servidor (Kick).")
 async def expulsar(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str = "Traición al Estado"):
@@ -518,17 +414,60 @@ async def expulsar(interaction: discord.Interaction, sospechoso: discord.Member,
     except Exception as e:
         await interaction.response.send_message(f"⚠️ Falla burocrática al expulsar: {e}", ephemeral=True)
 
+@bot.tree.command(name="advertir", description="Anota un strike en el legajo de un ciudadano.")
+async def advertir(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str):
+    if not interaction.user.guild_permissions.moderate_members:
+        await interaction.response.send_message("❌ No tenés jurisdicción para advertir.", ephemeral=True)
+        return
+        
+    sospechoso_id = str(sospechoso.id)
+    ref = db.reference(f'/legajos_penales/{sospechoso_id}')
+    
+    faltas_actuales = ref.get()
+    if faltas_actuales is None:
+        faltas_actuales = 0
+        
+    nuevas_faltas = faltas_actuales + 1
+    ref.set(nuevas_faltas)
+    
+    try:
+        await sospechoso.send(f"⚠️ **Atención del Ministerio de la Verdad** ⚠️\nRecibiste una advertencia oficial.\n**Cargo:** {motivo}\n**Faltas acumuladas:** {nuevas_faltas}")
+    except discord.Forbidden:
+        pass
+        
+    await interaction.response.send_message(f"📝 Se anotó un strike (Falta {nuevas_faltas}) para {sospechoso.mention}.\n**Motivo:** {motivo}")
+
+
+@bot.tree.command(name="indulto", description="Limpia los antecedentes penales de un ciudadano.")
+async def indulto(interaction: discord.Interaction, ciudadano: discord.User):
+    if not interaction.user.guild_permissions.ban_members:
+        await interaction.response.send_message("❌ Solo el Poder Ejecutivo puede otorgar indultos.", ephemeral=True)
+        return
+
+    ciudadano_id = str(ciudadano.id)
+    ref = db.reference(f'/legajos_penales/{ciudadano_id}')
+    
+    if ref.get() is None:
+        await interaction.response.send_message(f"📝 El ciudadano {ciudadano.mention} tiene el legajo limpio. Nada que perdonar.", ephemeral=True)
+    else:
+        ref.delete()
+        await interaction.response.send_message(f"🕊️ **INDULTO OTORGADO:** Los antecedentes de {ciudadano.mention} fueron borrados. Vuelve a fojas cero.")
+
+
 @bot.tree.command(name="banear", description="Exilia permanentemente a un enemigo del Estado (Ban).")
 async def banear(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str = "Enemigo público"):
     if not interaction.user.guild_permissions.ban_members:
-        await interaction.response.send_message("❌ No tenés el rango necesario para firmar exilios permanentes.", ephemeral=True)
+        await interaction.response.send_message("❌ No tenés el rango necesario para firmar exilios.", ephemeral=True)
         return
     
     try:
+        db.reference(f'/legajos_penales/{str(sospechoso.id)}').delete()
+        
         await sospechoso.ban(reason=motivo)
-        await interaction.response.send_message(f"🛑 {sospechoso.mention} fue exiliado de por vida.No será recordado... \n**Cargo:** {motivo}")
+        await interaction.response.send_message(f"🛑 {sospechoso.mention} fue exiliado de por vida y su legajo fue purgado de la base de datos.\n**Cargo:** {motivo}")
     except Exception as e:
         await interaction.response.send_message(f"⚠️ Error procesal al aplicar el ban: {e}", ephemeral=True)
+
 @bot.event
 async def on_ready():
     print(f'Inspectora en linea. Logueada como {bot.user}')
