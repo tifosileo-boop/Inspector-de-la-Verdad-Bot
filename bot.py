@@ -482,8 +482,7 @@ async def banear(interaction: discord.Interaction, sospechoso: discord.Member, m
         return
     
     try:
-       db.reference(f'/servidores/{interaction.guild_id}/legajos_penales/{str(sospechoso.id)}').delete()
-        
+        db.reference(f'/servidores/{interaction.guild_id}/legajos_penales/{str(sospechoso.id)}').delete()
         await sospechoso.ban(reason=motivo)
         await interaction.response.send_message(f"🛑 {sospechoso.mention} fue exiliado de por vida y su legajo fue purgado de la base de datos.\n**Cargo:** {motivo}")
     except Exception as e:
