@@ -315,7 +315,46 @@ async def ranking(interaction: discord.Interaction):
         tabla += f"**{i}.** <@{user_id}> ➔ Puntos: **{stats['puntos']}** | Mejor ⏱️: {stats['mejor_tiempo']}s\n"
         
     await interaction.response.send_message(tabla)
-
+    
+@bot.tree.command(name="ayuda", description="Manual del buen ciudadano. Conocé tus derechos (y obligaciones).")
+async def ayuda(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="🏛️ Manual del Buen Ciudadano",
+        description="Prestá atención. Soy la Inspectora del Ministerio de la Verdad y mi trabajo es mantener el orden en este territorio. Acá tenés las herramientas oficiales:",
+        color=discord.Color.dark_red()
+    )
+    
+    embed.add_field(
+        name="📚 Deberes Cívicos",
+        value=(
+            "**`/presente`** ➔ Fichá tu lealtad diaria al Estado. Si colgás más de 32hs, perdés tu historial.\n"
+            "**`/examen`** ➔ Respondé contra reloj y demostrá tu intelecto para sumar crédito social.\n"
+            "**`/ranking`** ➔ Mirá el Cuadro de Honor con los ciudadanos ejemplares del servidor."
+        ),
+        inline=False
+    )
+    
+    embed.add_field(
+        name="🚨 Orden y Disciplina",
+        value=(
+            "**`/reportar`** ➔ ¿Viste a un traidor o alguien rompiendo las reglas? Denuncialo. El reporte es confidencial.\n"
+            "**`!queja <texto>`** ➔ El buzón de sugerencias. Todo lo que escribas acá irá directo a la trituradora de papel."
+        ),
+        inline=False
+    )
+    
+    embed.add_field(
+        name="⚖️ Herramientas Ministeriales (Solo Admins)",
+        value=(
+            "Los altos mandos controlan el Estado con `/advertir`, `/aislar`, `/expulsar`, `/banear` y `/indulto`. "
+            "También gestionan la burocracia con `/configurar` y `/set_oficina`. Portate bien para no conocer estos comandos desde adentro."
+        ),
+        inline=False
+    )
+    
+    embed.set_footer(text="La Inspectora te observa. Gloria al servidor.")
+    
+    await interaction.response.send_message(embed=embed)
 
 hora_cierre = datetime.time(hour=3, minute=0, tzinfo=datetime.timezone.utc) 
 hora_apertura = datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc) 
