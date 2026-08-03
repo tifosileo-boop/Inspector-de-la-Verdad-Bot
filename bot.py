@@ -38,6 +38,28 @@ intents.message_content = True
 intents.members = True 
 
 bot = commands.Bot(command_prefix='!', intents=intents)
+
+@bot.tree.command(name="configurar", description="Fija los canales oficiales del Ministerio para este servidor.")
+async def configurar(interaction: discord.Interaction, canal_reportes: discord.TextChannel, canal_alertas: discord.TextChannel):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("❌ Faltan firmas. Solo los administradores locales pueden asentar oficinas.", ephemeral=True)
+        return
+
+    server_id = str(interaction.guild_id)
+    ref = db.reference(f'/servidores/{server_id}')
+    
+    ref.set({
+        "canal_oficina": canal_reportes.id,
+        "canal_alertas": canal_alertas.id
+    })
+    
+    await interaction.response.send_message(
+        f"✅ Burocracia completada en este territorio.\n"
+        f"📄 Los escraches irán a: {canal_reportes.mention}\n"
+        f"🚨 Las alertas generales irán a: {canal_alertas.mention}", 
+        ephemeral=True
+    )
+    
 @bot.command()
 async def ping(ctx):
     await ctx.send('¡Comunicación completamente operativa!')
@@ -83,52 +105,26 @@ async def transmision_oficial():
         
         await canal.send(mensaje_sorteado)
 
-@bot.command()
-async def aislar(ctx, alborotador: discord.Member = None, *, motivo="Alteración del orden público"):
-    roles_autorizados = ["『 Presidente 』", "Ministerio de Seguridad", "Jefe de Gabinete"]
-    tiene_permiso = ctx.author.id == ctx.guild.owner_id or any(rol.name in roles_autorizados for rol in ctx.author.roles)
-    
-    if not tiene_permiso:
-        await ctx.send("❌ **ACCESO DENEGADO:** No tenés la chapa necesaria para aplicar esta medida cautelar.")
-        return
-
-    if alborotador is None:
-        await ctx.send("❌ **ERROR:** Tenés que mencionar al instigador. \nEjemplo: `!aislar @Usuario Intento de piquete`.")
-        return
-
-    roles_inmunes = ["『 Presidente 』", "Jefe de Gabinete", "『 Senadores 』", "Ministerio de la Verdad"]
-    es_inmune = alborotador.id == ctx.guild.owner_id or alborotador == bot.user or any(rol.name in roles_inmunes for rol in alborotador.roles)
-
-    if es_inmune:
-        await ctx.send("❌ **ERROR:** El ciudadano posee fueros. No podés mandarlo al calabozo.")
-        return
-
-    try:
-        tiempo_aislamiento = datetime.timedelta(hours=1)
-        await alborotador.timeout(tiempo_aislamiento, reason=motivo)
-        
-        await ctx.send(f"🔒 **CALABOZO ACTIVO:** El ciudadano {alborotador.mention} fue aislado de la sociedad por 1 hora. \n**Motivo:** {motivo}\nQue reflexione sobre su traición al Estado.")
-    except Exception as e:
-        await ctx.send(f"⚠️ **Error burocrático:** {e}")
-
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
         return
+    
     if len(message.mentions) > 5:
         await message.delete()
         try:
             await message.author.kick(reason="Protocolo Anti-Nuke: Spam masivo de menciones")
-            canal_seguridad = bot.get_channel(1394371063865147424)
-            if canal_seguridad:
-                await canal_seguridad.send(f"🚨 **DEFENSA ACTIVADA:** El usuario {message.author.name} intentó un ping masivo. Fue ejecutado en el acto.")
+            canal_id = db.reference(f'/servidores/{message.guild.id}/canal_alertas').get()
+            if canal_id:
+                canal_seguridad = bot.get_channel(canal_id)
+                if canal_seguridad:
+                    await canal_seguridad.send(f"🚨 **DEFENSA ACTIVADA:** El usuario {message.author.name} intentó un ping masivo. Fue ejecutado en el acto.")
         except Exception as e:
             print(f"Error burocrático al expulsar: {e}")
         return
 
     if bot.user in message.mentions:
         respuestas_mencion = [
-
             "Otra solución a tú aburrimiento es probando el !examen que Xene desarrolló para ustedes... Es corto, pero es algo",
             "Si tienes una queja, pero no quieres denunciar, te recomiendo usar !queja y así nos aseguramos de que tus comentarios no sean oídos",
             "Por favor, decime que es bait.",
@@ -162,20 +158,19 @@ async def on_message(message):
         await message.channel.send(respuesta)
 
     await bot.process_commands(message)
-
 @bot.command()
 @commands.has_permissions(manage_messages=True) 
 async def clear(ctx, cantidad: int):
     await ctx.channel.purge(limit=cantidad + 1)
     mensaje = await ctx.send(f"🧹 El Ministerio de la Obediencia ha incinerado {cantidad} mensajes de disidencia.")
 fichadas_lealtad = {}
+
 @bot.command()
 async def queja(ctx, *, texto=None):
     if texto is None:
         await ctx.send("❌ **ERROR:** No podés quejarte del vacío. Escribí algo, che.")
         return
-    canal_mods = bot.get_channel(1394422101129167039) 
-    
+        
     respuestas_burocraticas = [
         "Su queja ha sido recibida y enviada directamente a la trituradora de papel.",
         "Entendido. Se analizará su reclamo en los próximos 10 a 15 años.",
@@ -183,16 +178,24 @@ async def queja(ctx, *, texto=None):
         "Su descontento ha sido registrado. Un oficial de lealtad lo visitará pronto para 'charlar'.",
         "Formulario 404: Empatía no encontrada. Intente de nuevo el año que viene.",
         "Su reclamo fue derivado al sector de 'Asuntos Inexistentes'.",
-        "Anotado en mi máquina de escribir invisible. Siga circulando."]
+        "Anotado en mi máquina de escribir invisible. Siga circulando."
+    ]
 
-    if canal_mods:
-        await canal_mods.send(f"📩 **NUEVA QUEJA:**\n**Usuario:** {ctx.author.mention}\n**Asunto:** {texto}")
-        await ctx.send(f"📋 {random.choice(respuestas_burocraticas)}")
+    id_guardado = db.reference(f'/servidores/{ctx.guild.id}/canal_oficina').get()
+    
+    if id_guardado:
+        canal_mods = bot.get_channel(id_guardado)
+        if canal_mods:
+            await canal_mods.send(f"📩 **NUEVA QUEJA:**\n**Usuario:** {ctx.author.mention}\n**Asunto:** {texto}")
+            await ctx.send(f"📋 {random.choice(respuestas_burocraticas)}")
+            return
+            
+    await ctx.send("⚠️ La burocracia falló: Este servidor no tiene configurada una oficina de denuncias.")
 
 @bot.tree.command(name="presente", description="Fichá tu lealtad diaria al Estado. Tenés 32hs de margen antes de perder la racha.")
 async def presente(interaction: discord.Interaction):
     usuario_id = str(interaction.user.id)
-    ref = db.reference(f'/fichadas_lealtad/{usuario_id}')
+    ref = db.reference(f'/servidores/{interaction.guild_id}/fichadas_lealtad/{usuario_id}')
     
     datos = ref.get()
     
@@ -279,29 +282,25 @@ hora_apertura = datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)
 
 @tasks.loop(time=hora_cierre)
 async def toque_de_queda():
-    canal = bot.get_channel(1394371063865147424) 
-    if canal:
-        await canal.send("Me iré a descansar, hice un buen trabajo por hoy...")
+    servidores = db.reference('/servidores').get()
+    if not servidores: return
+    for server_id, data in servidores.items():
+        canal_id = data.get("canal_alertas")
+        if canal_id:
+            canal = bot.get_channel(canal_id)
+            if canal: await canal.send("Me iré a descansar, hice un buen trabajo por hoy...")
 
 @tasks.loop(time=hora_apertura)
 async def izar_bandera():
-    canal = bot.get_channel(1394371063865147424) 
-    if canal:
-        await canal.send("Mentí, todo este tiempo estuve despierta... Así que lo leí todo")
+    servidores = db.reference('/servidores').get()
+    if not servidores: return
+    for server_id, data in servidores.items():
+        canal_id = data.get("canal_alertas")
+        if canal_id:
+            canal = bot.get_channel(canal_id)
+            if canal: await canal.send("Buenos días a todos, ¡comenzaré a patrullar!")
 
-@bot.event
-async def on_ready():
-    print(f'¡{bot.user} ha arribado, comenzando inspección constante!')
-    
-    if not transmision_oficial.is_running():
-        transmision_oficial.start()
-
-    if not toque_de_queda.is_running():
-        toque_de_queda.start()
-        
-    if not izar_bandera.is_running():
-        izar_bandera.start()
-keep_alive()
+acciones_seguridad = {}
 
 acciones_seguridad = {}
 
@@ -327,11 +326,14 @@ async def on_guild_channel_delete(channel):
             if len(acciones_recientes) >= 2:
                 try:
                     await atacante.ban(reason="Protocolo Anti-Nuke: Destrucción de infraestructura del Servidor")
-                    canal_alertas = bot.get_channel(1394371063865147424)
-                    if canal_alertas:
-                        await canal_alertas.send(f"🚨 **¡INTRUSIÓN NEUTRALIZADA!** El individuo {atacante.mention} intentó desmantelar el servidor y fue ejecutado en el acto.")
+                    canal_id = db.reference(f'/servidores/{channel.guild.id}/canal_alertas').get()
+                    if canal_id:
+                        canal_alertas = bot.get_channel(canal_id)
+                        if canal_alertas:
+                            await canal_alertas.send(f"🚨 **¡INTRUSIÓN NEUTRALIZADA!** El individuo {atacante.mention} intentó desmantelar el servidor y fue ejecutado en el acto.")
                 except Exception as e:
                     print(f"Error burocrático al detener nuke: {e}")
+
 registro_creacion_canales = {}
 
 @bot.event
@@ -341,12 +343,17 @@ async def on_guild_channel_create(channel):
             atacante = entry.user
             if atacante == bot.user or atacante.id == channel.guild.owner_id:
                 return
+            
             tiempo_actual = datetime.datetime.now(datetime.timezone.utc)
+            
             if atacante.id not in registro_creacion_canales:
-                registro_creacion_canales[atacante.id] = []           
+                registro_creacion_canales[atacante.id] = []            
+            
             registro_creacion_canales[atacante.id].append(tiempo_actual)        
+            
             creaciones_recientes = [t for t in registro_creacion_canales[atacante.id] if (tiempo_actual - t).total_seconds() < 15]
             registro_creacion_canales[atacante.id] = creaciones_recientes
+            
             if len(creaciones_recientes) >= 2:
                 try:
                     try:
@@ -354,24 +361,43 @@ async def on_guild_channel_create(channel):
                     except:
                         pass 
                     await atacante.ban(reason="Protocolo Anti-Nuke: Destrucción de infraestructura del Servidor")
-                    canal_alertas = bot.get_channel(1394371063865147424)
-                    if canal_alertas:
-                        await canal_alertas.send(f"🚨 **¡INTRUSIÓN NEUTRALIZADA!** El individuo {atacante.mention} intentó desmantelar el servidor y fue ejecutado en el acto.")
+                    
+                    canal_id = db.reference(f'/servidores/{channel.guild.id}/canal_alertas').get()
+                    if canal_id:
+                        canal_seguridad = bot.get_channel(canal_id)
+                        if canal_seguridad:
+                            await canal_seguridad.send(f"🚨 **DEFENSA ACTIVADA:** El usuario {atacante.name} intentó un atentado. Fue ejecutado.")
                 except Exception as e:
                     print(f"Error burocrático al detener nuke: {e}")
+
+@bot.tree.command(name="set_oficina", description="Define el canal donde llegarán los reportes de este servidor.")
+async def set_oficina(interaction: discord.Interaction, canal: discord.TextChannel):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("❌ Solo un Administrador puede abrir una oficina ministerial.", ephemeral=True)
+        return
+    
+    db.reference(f'/servidores/{interaction.guild.id}/canal_oficina').set(canal.id)
+    await interaction.response.send_message(f"🏛️ Oficina de denuncias establecida con éxito en {canal.mention}.")
+    
 @bot.command()
 async def sinc(ctx):
     try:
-        mi_servidor = discord.Object(id=1394371062111666182)
-        bot.tree.copy_global_to(guild=mi_servidor)
-        sincronizados = await bot.tree.sync(guild=mi_servidor)
+        bot.tree.copy_global_to(guild=ctx.guild)
+        sincronizados = await bot.tree.sync(guild=ctx.guild)
         
-        await ctx.send(f"✅ Trámite aprobado: {len(sincronizados)} comandos de aplicación sincronizados al instante en este servidor.")
+        await ctx.send(f"✅ Jurisdicción actualizada: {len(sincronizados)} comandos sincronizados en **{ctx.guild.name}**.")
     except Exception as e:
-        await ctx.send(f"⚠️ Falla en la matrix burocrática: {e}")
+        await ctx.send(f"⚠️ Error burocrático al sincronizar en esta jurisdicción: {e}")
 
 @bot.tree.command(name="reportar", description="Denunciá a un disidente ante el Ministerio de la Verdad.")
 async def reportar(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str):
+    id_guardado = db.reference(f'/servidores/{interaction.guild.id}/canal_oficina').get()
+    
+    if not id_guardado:
+        await interaction.response.send_message("⚠️ Este servidor aún no configuró su oficina de denuncias con `/set_oficina`.", ephemeral=True)
+        return
+        
+    canal_oficina = bot.get_channel(id_guardado)
     
     expediente = (
         f"🚨 **NUEVO REPORTE REGISTRADO** 🚨\n"
@@ -380,16 +406,11 @@ async def reportar(interaction: discord.Interaction, sospechoso: discord.Member,
         f"**Cargo imputado:** {motivo}"
     )
     
-    await interaction.response.send_message(
-        f"✅ Tu denuncia contra {sospechoso.display_name} fue radicada con éxito. El Ministerio evaluará su caso.", 
-        ephemeral=True
-    )
-    canal_oficina = bot.get_channel(1394422101129167039) 
-    
     if canal_oficina:
         await canal_oficina.send(expediente)
+        await interaction.response.send_message(f"✅ Tu denuncia contra {sospechoso.display_name} fue radicada con éxito.", ephemeral=True)
     else:
-        print("⚠️ Error burocrático: La Inspectora no encuentra la oficina de denuncias. Revisá el ID.")
+        await interaction.response.send_message("❌ El canal de denuncias configurado ya no existe o fue borrado. Avísenle a un admin.", ephemeral=True)
 
 @bot.tree.command(name="aislar", description="Manda a un disidente al calabozo (Timeout temporal).")
 async def aislar(interaction: discord.Interaction, sospechoso: discord.Member, minutos: int, motivo: str):
@@ -421,7 +442,7 @@ async def advertir(interaction: discord.Interaction, sospechoso: discord.Member,
         return
         
     sospechoso_id = str(sospechoso.id)
-    ref = db.reference(f'/legajos_penales/{sospechoso_id}')
+    ref = db.reference(f'/servidores/{interaction.guild_id}/legajos_penales/{sospechoso_id}')
     
     faltas_actuales = ref.get()
     if faltas_actuales is None:
@@ -445,7 +466,7 @@ async def indulto(interaction: discord.Interaction, ciudadano: discord.User):
         return
 
     ciudadano_id = str(ciudadano.id)
-    ref = db.reference(f'/legajos_penales/{ciudadano_id}')
+    ref = db.reference(f'/servidores/{interaction.guild_id}/legajos_penales/{ciudadano_id}')
     
     if ref.get() is None:
         await interaction.response.send_message(f"📝 El ciudadano {ciudadano.mention} tiene el legajo limpio. Nada que perdonar.", ephemeral=True)
@@ -461,7 +482,7 @@ async def banear(interaction: discord.Interaction, sospechoso: discord.Member, m
         return
     
     try:
-        db.reference(f'/legajos_penales/{str(sospechoso.id)}').delete()
+       db.reference(f'/servidores/{interaction.guild_id}/legajos_penales/{str(sospechoso.id)}').delete()
         
         await sospechoso.ban(reason=motivo)
         await interaction.response.send_message(f"🛑 {sospechoso.mention} fue exiliado de por vida y su legajo fue purgado de la base de datos.\n**Cargo:** {motivo}")
@@ -470,7 +491,12 @@ async def banear(interaction: discord.Interaction, sospechoso: discord.Member, m
 
 @bot.event
 async def on_ready():
-    print(f'Inspectora en linea. Logueada como {bot.user}')
+    print(f'¡La Inspectora ha arribado! Logueada como {bot.user}')
+    
+    if not transmision_oficial.is_running(): transmision_oficial.start()
+    if not toque_de_queda.is_running(): toque_de_queda.start()
+    if not izar_bandera.is_running(): izar_bandera.start()
+        
     try:
         mi_servidor = discord.Object(id=1394371062111666182)
         bot.tree.copy_global_to(guild=mi_servidor)
@@ -478,6 +504,7 @@ async def on_ready():
         print(f"EXITO: Se sincronizaron {len(sincronizados)} comandos al instante.")
     except Exception as e:
         print(f"ERROR burocratico al sincronizar: {e}")
-
+        
+keep_alive()
 token_secreto = os.getenv('DISCORD_TOKEN')
 bot.run(token_secreto)
