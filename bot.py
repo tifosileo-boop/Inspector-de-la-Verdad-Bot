@@ -281,7 +281,7 @@ async def examen(interaction: discord.Interaction):
         tiempo = time.time() - inicio
   
         if any(opcion in msg.content.lower() for opcion in pregunta['r']):
-            puntos = max(1, int((15 - tiempo) * 10)) s
+            puntos = max(1, int((15 - tiempo) * 10))
             
             ref = db.reference(f'/servidores/{interaction.guild_id}/ranking_examen/{interaction.user.id}')
             datos = ref.get() or {"puntos": 0, "correctas": 0, "mejor_tiempo": 99.9}
