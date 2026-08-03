@@ -9,6 +9,8 @@ import json
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import db
+import time
+import asyncio
 app = Flask('')
 
 @app.route('/')
@@ -239,42 +241,80 @@ async def presente(interaction: discord.Interaction):
     
     await interaction.response.send_message(f"🫡 **REGISTRO DE LEALTAD:**\nCiudadano {interaction.user.mention}, esta es su ficha N° {nueva_cantidad}. ¡Su trabajo no será olvidado!{mensaje_extra}")
 
-@bot.command()
-async def examen(ctx):
+@bot.tree.command(name="examen", description="Rendí el examen de ciudadanía. Respuestas rápidas dan más puntos.")
+async def examen(interaction: discord.Interaction):
     preguntas = [
-        {"p": "¿Que países intentaron tener una bomba nuclear en America Latina?", "r": "Argentina y Brasil"},
-        {"p": "¿Que país es el único en todo America del Sur que no requiere visa para visitar Estados Unidos?", "r": "Chile"},
-        {"p": "¿Cúal fue la única nación de America del Norte en tener un emperador?", "r": "México"},
-        {"p": "¿Que país ocupa ilegalmente las Islas Malvinas, Georgias, Sandiwich del Sur; Gibraltar; Belice; la Peninsula Trinidad; e Irlanda del Norte?", "r": "Gran Bretaña"},
-        {"p": "¿En que año cayó la ciudad de Constantinopla bajo el asedio del Imperio Otomano?", "r": "1453"},
-        {"p": "¿Qué número lleva la resolución de la ONU de 1965 sobre la disputa de soberanía de Malvinas?", "r": "2065"},
-        {"p": "¿Qué presidente argentino fue derrocado en el golpe de 1966?", "r": "Illia"},
-        {"p": "¿Quién fue el secretario de la Primera Junta en 1810?", "r": "Mariano Moreno"},
-        {"p": "¿Qué presidente argentino radical gobernó entre 1922 y 1928?", "r": "Alvear"},
-        {"p": "¿En qué año se declaró la Independencia Argentina?", "r": "1816"},
-        {"p": "¿Quién es conocido como el Libertador de América?", "r": "San Martin"},
-        {"p": "¿Qué ciudad era la capital del Imperio Inca?", "r": "Cuzco"},
-        {"p": "¿En qué país nació Simón Bolívar?", "r": "Venezuela"},
-        {"p": "¿Cómo se llamaba el ejército que cruzó los Andes?", "r": "Ejercito de los Andes"}
+        {"p": "¿Qué países intentaron tener una bomba nuclear en América Latina?", "r": ["argentina y brasil", "brasil y argentina"]},
+        {"p": "¿Qué número lleva la resolución de la ONU de 1965 sobre la disputa de soberanía de Malvinas?", "r": ["2065"]},
+        {"p": "¿Quién fue el secretario de la Primera Junta en 1810?", "r": ["mariano moreno", "moreno"]},
+        {"p": "¿Cuál es el océano más grande del mundo?", "r": ["pacifico", "pacífico"]},
+        {"p": "¿Quién pintó la Mona Lisa?", "r": ["da vinci", "leonardo da vinci"]},
+        {"p": "¿En qué año llegó el hombre a la Luna?", "r": ["1969"]},
+        {"p": "¿Cuál es el gas más abundante en la atmósfera de la Tierra?", "r": ["nitrogeno", "nitrógeno"]},
+        {"p": "¿Cuál es el país más grande del mundo?", "r": ["rusia"]},
+        {"p": "¿Quién escribió 'Don Quijote de la Mancha'?", "r": ["cervantes", "miguel de cervantes"]},
+        {"p": "¿Qué órgano del cuerpo humano consume más energía?", "r": ["cerebro", "el cerebro"]},
+        {"p": "¿En qué año cayó el Muro de Berlín?", "r": ["1989"]},
+        {"p": "¿En que año cayó Constantinopla?", "r": ["1453"]},
+        {"p": "¿Cuál es el imperio que más se extendió a través del mundo?", "r": ["gran bretaña", "imperio britanico", "imperio británico"]},
+        {"p": "¿Quiénes ganaron la Segunda Guerra Mundial?", "r": ["los aliados"]},
+        {"p": "¿Cuál es el país más viejo de Europa?", "r": ["san Marino"]},
+        {"p": "¿Cuando se independizó Argentina", "r": ["1816"]},
+        {"p": "¿Quién fue el emperador de Macedonia?", "r": ["alejandro magno"]},
+        {"p": "¿De que imperio nació la lengua latina?", "r": ["imperio romano", "roma"]},
+        {"p": "¿A quién le corresponde la soberanía de las Islas Malvinas, Georgias y Sandiwch del Sur?", "r": ["argentina"]},
+        {"p": "¿A quién le corresponde la soberanía de Gibraltar?", "r": ["España"]},
+        {"p": "¿Como se llama el imperio anterior a Nueva España?", "r": ["imperio azteca", "aztecas", "mexicas"]},
+        {"p": "¿Como se llama el golfo que comparten México, Estados Unidos, Cuba y Bahamas?", "r": ["golfo de mexico", "golfo de méxico"]},
+        {"p": "¿Cómo se llama el proceso por el cual las plantas hacen su alimento?", "r": ["fotosintesis", "fotosíntesis"]}
     ]
     
-    pregunta_sorteada = random.choice(preguntas)
-    await ctx.send(f"🧐 **EXAMEN DE CIUDADANÍA:**\n{pregunta_sorteada['p']}\n*(Tenés 15 segundos para responder)*")
+    pregunta = random.choice(preguntas)
+    await interaction.response.send_message(f"🧐 **EXAMEN DE CIUDADANÍA:**\n{pregunta['p']}\n*(Tenés 15 segundos. Respondé acá mismo)*")
 
     def check(m):
-        
-        return m.channel == ctx.channel and m.author != bot.user
+        return m.channel == interaction.channel and m.author == interaction.user
 
+    inicio = time.time()
     try:
         msg = await bot.wait_for('message', check=check, timeout=15.0)
-        
-        if pregunta_sorteada['r'].lower() in msg.content.lower():
-            await ctx.send(f"✅ ¡Correcto {msg.author.mention}! Has demostrado ser un ciudadano ejemplar.")
+        tiempo = time.time() - inicio
+  
+        if any(opcion in msg.content.lower() for opcion in pregunta['r']):
+            puntos = max(1, int((15 - tiempo) * 10)) s
+            
+            ref = db.reference(f'/servidores/{interaction.guild_id}/ranking_examen/{interaction.user.id}')
+            datos = ref.get() or {"puntos": 0, "correctas": 0, "mejor_tiempo": 99.9}
+            
+            datos["puntos"] += puntos
+            datos["correctas"] += 1
+            if tiempo < datos["mejor_tiempo"]:
+                datos["mejor_tiempo"] = round(tiempo, 2)
+                
+            ref.set(datos)
+            
+            await msg.reply(f"✅ ¡Correcto! \n⏱️ Tiempo: **{round(tiempo, 2)}s**\n📈 Sumaste **{puntos}** puntos de crédito social. (Total: {datos['puntos']})")
         else:
-            await ctx.send(f"❌ Incorrecto. La respuesta era **{pregunta_sorteada['r']}**. Ahora pagarás 60 años de impuestos al valor de la tierra.")
-    except:
-        await ctx.send("⏰ Se acabó el tiempo. El silencio es sospechoso de traición.")
+            await msg.reply(f"❌ Incorrecto. La respuesta era **{pregunta['r'][0].title()}**. A pagar impuestos.")
+    except asyncio.TimeoutError:
+        await interaction.channel.send(f"⏰ Se acabó el tiempo de {interaction.user.mention}. El silencio es traición.")
 
+@bot.tree.command(name="ranking", description="Muestra a los ciudadanos más cultos (y rápidos) del servidor.")
+async def ranking(interaction: discord.Interaction):
+    ref = db.reference(f'/servidores/{interaction.guild_id}/ranking_examen')
+    datos = ref.get()
+    
+    if not datos:
+        await interaction.response.send_message("📊 Todavía nadie rindió el examen en esta jurisdicción.", ephemeral=True)
+        return
+        
+    top_ciudadanos = sorted(datos.items(), key=lambda x: x[1]['puntos'], reverse=True)[:10]
+    
+    tabla = "🏆 **CUADRO DE HONOR DEL MINISTERIO** 🏆\n\n"
+    for i, (user_id, stats) in enumerate(top_ciudadanos, 1):
+        tabla += f"**{i}.** <@{user_id}> ➔ Puntos: **{stats['puntos']}** | Mejor ⏱️: {stats['mejor_tiempo']}s\n"
+        
+    await interaction.response.send_message(tabla)
 
 
 hora_cierre = datetime.time(hour=3, minute=0, tzinfo=datetime.timezone.utc) 
