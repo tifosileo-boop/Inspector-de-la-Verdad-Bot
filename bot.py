@@ -359,6 +359,9 @@ async def ayuda(interaction: discord.Interaction):
 hora_cierre = datetime.time(hour=3, minute=0, tzinfo=datetime.timezone.utc) 
 hora_apertura = datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc) 
 
+hora_cierre = datetime.time(hour=3, minute=0, tzinfo=datetime.timezone.utc) 
+hora_apertura = datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc) 
+
 @tasks.loop(time=hora_cierre)
 async def toque_de_queda():
     servidores = db.reference('/servidores').get()
@@ -366,8 +369,8 @@ async def toque_de_queda():
     for server_id, data in servidores.items():
         canal_id = data.get("canal_alertas")
         if canal_id:
-            canal = bot.get_channel(canal_id)
-            if canal: await canal.send("Me iré a descansar, hice un buen trabajo por hoy...")
+            canal = bot.get_channel(int(canal_id)) 
+            if canal: await canal.send("Fue un lindo día, buenas noches a todos")
 
 @tasks.loop(time=hora_apertura)
 async def izar_bandera():
@@ -376,8 +379,8 @@ async def izar_bandera():
     for server_id, data in servidores.items():
         canal_id = data.get("canal_alertas")
         if canal_id:
-            canal = bot.get_channel(canal_id)
-            if canal: await canal.send("Buenos días a todos, ¡comenzaré a patrullar!")
+            canal = bot.get_channel(int(canal_id)) 
+            if canal: await canal.send("Un nuevo día en este hermoso server... ¡A trabajar!")
 
 acciones_seguridad = {}
 
