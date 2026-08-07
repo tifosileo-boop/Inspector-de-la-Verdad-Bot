@@ -355,51 +355,27 @@ async def ayuda(interaction: discord.Interaction):
     
     await interaction.response.send_message(embed=embed)
 
-zona_arg = datetime.timezone(datetime.timedelta(hours=-3))
-
-hora_cierre = datetime.time(hour=0, minute=0, tzinfo=zona_arg) 
-hora_apertura = datetime.time(hour=3, minute=0, tzinfo=zona_arg)
-
-@tasks.loop(time=hora_cierre)
-async def toque_de_queda():
-    print("⏰ [LOG] Iniciando burocracia de Toque de Queda (00:00 ARG)...")
-    try:
-        servidores = db.reference('/servidores').get()
-        if not servidores: 
-            print("⚠️ [LOG] No hay servidores registrados en Firebase para el toque de queda.")
-            return
-            
-        for server_id, data in servidores.items():
-            canal_id = data.get("canal_alertas")
-            if canal_id:
-                try:
-                    canal = bot.get_channel(int(canal_id)) or await bot.fetch_channel(int(canal_id))
-                    if canal: 
-                        await canal.send("¡Oíd, mortales!, el grito sagrado... ¡Libertad!, ¡libertad!, ¡libertad!. Oíd el ruido de rotas cadenas, ved el trono a la noble igualdad...")
-                except Exception as e:
-                    print(f"⚠️ [LOG] Error enviando alerta al servidor {server_id}: {e}")
-    except Exception as e:
-        print(f"🚨 [LOG] No se pudo cantar el himno: {e}")
-
-@tasks.loop(time=hora_apertura)
-async def izar_bandera():
-    print("⏰ [LOG] Iniciando burocracia de Izar Bandera (09:00 ARG)...")
-    try:
-        servidores = db.reference('/servidores').get()
-        if not servidores: 
-            return
-            
-        for server_id, data in servidores.items():
-            canal_id = data.get("canal_alertas")
-            if canal_id:
-                try:
-                    canal = bot.get_channel(int(canal_id)) or await bot.fetch_channel(int(canal_id))
-                    if canal: 
-                        await canal.send("¡O juremos con gloria a morir!")
-                except Exception as e:
-                    print(f"⚠️ [LOG] Error enviando alerta al servidor {server_id}: {e}")
-    except Exception as e:
-        print(f"🚨 [LOG] Falla total en el loop de Izar Bandera: {e}")
+@tasks.loop(minutes=1)
+async def rutina_diaria():
+    ahora_utc = datetime.datetime.now(datetime.timezone.utc)
+    hora_arg = ahora_utc - datetime.timedelta(hours=3)
+    
+    if hora_arg.hour == 3 and hora_arg.minute == 15:
+        print("⏰ [LOG] Ejecutando prueba de sistema (03:15 ARG)...")
+        try:
+            servidores = db.reference('/servidores').get()
+            if servidores:
+                for server_id, data in servidores.items():
+                    canal_id = data.get("canal_alertas")
+                    if canal_id:
+                        try:
+                            canal = bot.get_channel(int(canal_id)) or await bot.fetch_channel(int(canal_id))
+                            if canal: 
+                                await canal.send("¡O juremos con gloria a morir! (Prueba de sistema)")
+                        except Exception as e:
+                            print(f"⚠️ [LOG] Error {server_id}: {e}")
+        except Exception as e:
+            print(f"🚨 [LOG] Falla en la prueba: {e}")
 
 acciones_seguridad = {}
 
