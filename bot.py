@@ -357,23 +357,38 @@ async def ayuda(interaction: discord.Interaction):
 
 @tasks.loop(minutes=1)
 async def rutina_diaria():
-    print("🕵️ [DEBUG] El loop dio una vuelta...", flush=True) 
-    
     try:
         ahora_utc = datetime.datetime.now(datetime.timezone.utc)
         hora_arg = ahora_utc - datetime.timedelta(hours=3)
-        
-        servidores = db.reference('/servidores').get()
-        if servidores:
-            for server_id, data in servidores.items():
-                canal_id = data.get("canal_alertas")
-                if canal_id:
-                    canal = bot.get_channel(int(canal_id)) or await bot.fetch_channel(int(canal_id))
-                    if canal: 
-                        await canal.send(f"⏱️ Prueba de reloj ministerial activa. Hora detectada: {hora_arg.hour}:{hora_arg.minute:02d} ARG")
-                        print("✅ Mensaje enviado con éxito al canal.", flush=True)
+
+        if hora_arg.hour == 0 and hora_arg.minute == 0:
+            servidores = db.reference('/servidores').get()
+            if servidores:
+                for server_id, data in servidores.items():
+                    canal_id = data.get("canal_alertas")
+                    if canal_id:
+                        try:
+                            canal = bot.get_channel(int(canal_id)) or await bot.fetch_channel(int(canal_id))
+                            if canal: 
+                                await canal.send("¡Oíd, mortales!, el grito sagrado... ¡Libertad!, ¡libertad!, ¡libertad!. Oíd el ruido de rotas cadenas, ved el trono a la noble igualdad...")
+                        except Exception as e:
+                            print(f"⚠️ Error {server_id}: {e}", flush=True)
+
+        elif hora_arg.hour == 9 and hora_arg.minute == 0:
+            servidores = db.reference('/servidores').get()
+            if servidores:
+                for server_id, data in servidores.items():
+                    canal_id = data.get("canal_alertas")
+                    if canal_id:
+                        try:
+                            canal = bot.get_channel(int(canal_id)) or await bot.fetch_channel(int(canal_id))
+                            if canal: 
+                                await canal.send("¡O juremos con gloria a morir!")
+                        except Exception as e:
+                            print(f"⚠️ Error {server_id}: {e}", flush=True)
+                            
     except Exception as e:
-        print(f"🚨 [LOG] Falla en el loop: {e}", flush=True)
+        print(f"🚨 Falla en la rutina: {e}", flush=True)
 
 acciones_seguridad = {}
 
