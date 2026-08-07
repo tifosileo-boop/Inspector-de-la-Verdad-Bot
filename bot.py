@@ -374,7 +374,7 @@ async def rutina_diaria():
                         except Exception as e:
                             print(f"⚠️ Error {server_id}: {e}", flush=True)
 
-        elif hora_arg.hour == 9 and hora_arg.minute == 0:
+        elif hora_arg.hour == 9 and hora_arg.minute == 25:
             servidores = db.reference('/servidores').get()
             if servidores:
                 for server_id, data in servidores.items():
