@@ -223,7 +223,6 @@ async def presente(interaction: discord.Interaction):
                 diferencia_horas = (ahora - ultima_vez).total_seconds() / 3600
                 
                 if fecha_hoy == fecha_ultima:
-                    # Ephemeral hace que el mensaje sea "invisible" para el resto
                     await interaction.response.send_message("⏳ **CALMATE, CIUDADANO:** Ya demostraste tu lealtad hoy. Volvé mañana.", ephemeral=True)
                     return
                 elif diferencia_horas <= 32:
@@ -356,11 +355,10 @@ async def ayuda(interaction: discord.Interaction):
     
     await interaction.response.send_message(embed=embed)
 
-hora_cierre = datetime.time(hour=3, minute=0, tzinfo=datetime.timezone.utc) 
-hora_apertura = datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc) 
+zona_arg = datetime.timezone(datetime.timedelta(hours=-3))
 
-hora_cierre = datetime.time(hour=3, minute=0, tzinfo=datetime.timezone.utc) 
-hora_apertura = datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc) 
+hora_cierre = datetime.time(hour=0, minute=0, tzinfo=zona_arg) 
+hora_apertura = datetime.time(hour=9, minute=0, tzinfo=zona_arg)
 
 @tasks.loop(time=hora_cierre)
 async def toque_de_queda():
