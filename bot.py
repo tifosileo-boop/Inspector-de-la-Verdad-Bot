@@ -362,7 +362,7 @@ async def rutina_diaria():
     
     print(f"🕵️ [DEBUG] Loop activo. El bot cree que son las {hora_arg.hour}:{hora_arg.minute:02d} ARG")
     
-    if hora_arg.hour == 3 and hora_arg.minute == 25:
+    if hora_arg.hour == 3 and hora_arg.minute == 47:
         print("⏰ [LOG] Ejecutando Toque de Queda (00:00 ARG)...")
         try:
             servidores = db.reference('/servidores').get()
@@ -589,9 +589,9 @@ async def on_ready():
     print(f'¡La Inspectora ha arribado! Logueada como {bot.user}')
     
     if not transmision_oficial.is_running(): transmision_oficial.start()
-    if not toque_de_queda.is_running(): toque_de_queda.start()
-    if not izar_bandera.is_running(): izar_bandera.start()
-        
+    
+    if not rutina_diaria.is_running(): rutina_diaria.start()
+    
     try:
         mi_servidor = discord.Object(id=1394371062111666182)
         bot.tree.copy_global_to(guild=mi_servidor)
