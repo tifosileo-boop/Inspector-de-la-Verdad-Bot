@@ -358,7 +358,7 @@ async def ayuda(interaction: discord.Interaction):
 zona_arg = datetime.timezone(datetime.timedelta(hours=-3))
 
 hora_cierre = datetime.time(hour=0, minute=0, tzinfo=zona_arg) 
-hora_apertura = datetime.time(hour=9, minute=0, tzinfo=zona_arg)
+hora_apertura = datetime.time(hour=3, minute=0, tzinfo=zona_arg)
 
 @tasks.loop(time=hora_cierre)
 async def toque_de_queda():
