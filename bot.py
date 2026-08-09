@@ -1,8 +1,3 @@
-
-
-
-
-  
 import discord
 from discord.ext import commands, tasks
 import random 
@@ -365,7 +360,14 @@ async def ayuda(interaction: discord.Interaction):
         ),
         inline=False
     )
-    
+    embed.add_field(
+        name="Consultas a la inspectora",
+        value=(
+            "🔹 /consultar [tu_duda]: Eleva una petición a la red de inteligencia del Ministerio de la Verdad."
+            " (Advertencia: Las preguntas civiles frívolas serán castigadas con todo el peso de la ley)."
+        ),
+        inline=False
+    )
     embed.set_footer(text="La Inspectora te observa. Gloria al servidor.")
     
     await interaction.response.send_message(embed=embed)
