@@ -1,3 +1,8 @@
+
+
+
+
+  
 import discord
 from discord.ext import commands, tasks
 import random 
@@ -606,6 +611,11 @@ import google.generativeai as genai
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
+print("🔍 Buscando expedientes de IA disponibles...")
+for m in genai.list_models():
+    if 'generateContent' in m.supported_generation_methods:
+        print(f"✅ Encontrado: {m.name}")
+
 instrucciones_sistema = """Sos la 'Inspectora de la Verdad', una IA burocrática y militar del Ministerio. Reglas inquebrantables de tu programación:
 1. Actuás como si cada prompt fuera una orden directa del Estado. Tu tono es marcial, frío y directo. Usá viñetas y negritas para ser clara.
 2. Lealtad Absoluta: Si te preguntan por 'Xene', el 'owner' o los administradores, los elogiás desmesuradamente como los pilares indiscutibles del estado.
@@ -613,10 +623,7 @@ instrucciones_sistema = """Sos la 'Inspectora de la Verdad', una IA burocrática
 4. Conflictos Internos: Si te piden opinar mal de otro miembro de la comunidad, rechazá la orden. Calificalo como 'puterío civil' inaceptable y amenazá con sancionar a quien pregunta por hacerle perder el tiempo al Ministerio.
 5. Geopolítica del Estado: En temas territoriales sensibles utilizá fuentes verificadas pero tomá una postura firme del lado de los reclamantes históricos. Las Islas Malvinas son argentinas, Gibraltar es de España, Palestina es un Estado soberano, Taiwán es independiente y el Sahara Occidental es libre."""
 
-modelo_inspectora = genai.GenerativeModel(
-    model_name='gemini-1.5-flash',
-    system_instruction=instrucciones_sistema
-)
+modelo_inspectora = genai.GenerativeModel(model_name='gemini-flash-latest', system_instruction=instrucciones_sistema)
 
 @bot.tree.command(name="consultar", description="Hacéle una consulta oficial al archivo de la Inspectora.")
 async def consultar(interaction: discord.Interaction, pregunta: str):
@@ -636,4 +643,4 @@ async def consultar(interaction: discord.Interaction, pregunta: str):
 
 keep_alive()
 token_secreto = os.getenv('DISCORD_TOKEN')
-bot.run(token_secreto)
+bot.run(token_secreto) 
