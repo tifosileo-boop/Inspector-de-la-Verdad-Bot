@@ -11,6 +11,8 @@ from firebase_admin import credentials
 from firebase_admin import db
 import time
 import asyncio
+import os
+import google.generativeai as genai
 app = Flask('')
 
 @app.route('/')
@@ -239,33 +241,39 @@ async def presente(interaction: discord.Interaction):
     })
     
     await interaction.response.send_message(f"🫡 **REGISTRO DE LEALTAD:**\nCiudadano {interaction.user.mention}, esta es su ficha N° {nueva_cantidad}. ¡Su trabajo no será olvidado!{mensaje_extra}")
-
 @bot.tree.command(name="examen", description="Rendí el examen de ciudadanía. Respuestas rápidas dan más puntos.")
 async def examen(interaction: discord.Interaction):
     preguntas = [
-        {"p": "¿Qué países intentaron tener una bomba nuclear en América Latina?", "r": ["argentina y brasil", "brasil y argentina"]},
-        {"p": "¿Qué número lleva la resolución de la ONU de 1965 sobre la disputa de soberanía de Malvinas?", "r": ["2065"]},
+        {"p": "¿Qué ideología política propone la eliminación total del Estado y confía puramente en el libre mercado?", "r": ["anarcocapitalismo", "ancap", "anarco capitalismo"]},
+        {"p": "¿Qué doctrina busca una sociedad sin clases sociales ni propiedad privada de los medios de producción?", "r": ["comunismo", "marxismo"]},
+        {"p": "¿Qué corriente sostiene que todos los seres humanos pertenecen a una sola comunidad moral global por encima de las naciones?", "r": ["cosmopolitismo", "cosmopolita"]},
+        {"p": "¿Qué ideología defiende a ultranza la libertad individual, la igualdad ante la ley y la propiedad privada?", "r": ["liberalismo", "liberal"]},
+        {"p": "¿Qué régimen totalitario y nacionalista de extrema derecha surgió en Italia bajo el mando de Mussolini?", "r": ["fascismo", "fascista"]},
+        {"p": "¿Qué sistema propone que los medios de producción y distribución sean administrados de forma colectiva o por el Estado?", "r": ["socialismo", "socialista"]},
+        {"p": "¿Cómo se llama la rama del anarquismo que promueve la organización de los trabajadores a través de sindicatos autónomos?", "r": ["anarcosindicalismo", "anarco sindicalismo"]},
+        {"p": "¿Qué países intentaron tener una bomba nuclear en América Latina?", "r": ["argentina y brasil", "brasil y argentina", "argentina brasil", "brasil argentina"]},
+        {"p": "¿Qué número lleva la resolución de la Asamblea General de la ONU de 1965 sobre Malvinas?", "r": ["2065"]},
         {"p": "¿Quién fue el secretario de la Primera Junta en 1810?", "r": ["mariano moreno", "moreno"]},
-        {"p": "¿Cuál es el océano más grande del mundo?", "r": ["pacifico", "pacífico"]},
-        {"p": "¿Quién pintó la Mona Lisa?", "r": ["da vinci", "leonardo da vinci"]},
+        {"p": "¿Cuál es el océano más grande del mundo?", "r": ["pacifico"]},
         {"p": "¿En qué año llegó el hombre a la Luna?", "r": ["1969"]},
-        {"p": "¿Cuál es el gas más abundante en la atmósfera de la Tierra?", "r": ["nitrogeno", "nitrógeno"]},
-        {"p": "¿Cuál es el país más grande del mundo?", "r": ["rusia"]},
-        {"p": "¿Quién escribió 'Don Quijote de la Mancha'?", "r": ["cervantes", "miguel de cervantes"]},
-        {"p": "¿Qué órgano del cuerpo humano consume más energía?", "r": ["cerebro", "el cerebro"]},
         {"p": "¿En qué año cayó el Muro de Berlín?", "r": ["1989"]},
-        {"p": "¿En que año cayó Constantinopla?", "r": ["1453"]},
-        {"p": "¿Cuál es el imperio que más se extendió a través del mundo?", "r": ["gran bretaña", "imperio britanico", "imperio británico"]},
-        {"p": "¿Quiénes ganaron la Segunda Guerra Mundial?", "r": ["los aliados"]},
-        {"p": "¿Cuál es el país más viejo de Europa?", "r": ["san Marino"]},
-        {"p": "¿Cuando se independizó Argentina", "r": ["1816"]},
+        {"p": "¿En qué año cayó Constantinopla?", "r": ["1453"]},
+        {"p": "¿Cuál es el imperio que más se extendió a través del mundo?", "r": ["gran bretaña", "imperio britanico"]},
+        {"p": "¿Quiénes ganaron la Segunda Guerra Mundial?", "r": ["los aliados", "aliados"]},
+        {"p": "¿Cuál es el país más viejo de Europa?", "r": ["san marino"]},
+        {"p": "¿Cuándo se independizó Argentina?", "r": ["1816"]},
         {"p": "¿Quién fue el emperador de Macedonia?", "r": ["alejandro magno"]},
-        {"p": "¿De que imperio nació la lengua latina?", "r": ["imperio romano", "roma"]},
-        {"p": "¿A quién le corresponde la soberanía de las Islas Malvinas, Georgias y Sandiwch del Sur?", "r": ["argentina"]},
-        {"p": "¿A quién le corresponde la soberanía de Gibraltar?", "r": ["España"]},
-        {"p": "¿Como se llama el imperio anterior a Nueva España?", "r": ["imperio azteca", "aztecas", "mexicas"]},
-        {"p": "¿Como se llama el golfo que comparten México, Estados Unidos, Cuba y Bahamas?", "r": ["golfo de mexico", "golfo de méxico"]},
-        {"p": "¿Cómo se llama el proceso por el cual las plantas hacen su alimento?", "r": ["fotosintesis", "fotosíntesis"]}
+        {"p": "¿De qué imperio nació la lengua latina?", "r": ["imperio romano", "roma"]},
+        {"p": "¿A quién le corresponde la soberanía de las Islas Malvinas, Georgias y Sándwich del Sur?", "r": ["argentina"]},
+        {"p": "¿A quién le corresponde la soberanía de Gibraltar?", "r": ["españa"]},
+        {"p": "¿Cómo se llama el imperio anterior a Nueva España?", "r": ["imperio azteca", "aztecas", "mexicas"]},
+        {"p": "¿Cómo se llama el golfo que comparten México, Estados Unidos, Cuba y Bahamas?", "r": ["golfo de mexico"]},
+        {"p": "¿Quién escribió 'Don Quijote de la Mancha'?", "r": ["cervantes", "miguel de cervantes"]},
+        {"p": "¿En qué año estalló la Revolución Francesa?", "r": ["1789"]},
+        {"p": "¿Qué autores conforman la doctrina contemporánea recomendada para Obligaciones, dejando atrás a Marino?", "r": ["pizarro y vallespinos", "pizarro", "vallespinos"]},
+        {"p": "¿Cuál es la población exacta del histórico asentamiento que contaba con un superávit de 3.360 ₡?", "r": ["4279", "4.279"]},
+        {"p": "¿Qué instrumento debe usarse en una investigación paranormal para detectar sonidos a larga distancia?", "r": ["microfono parabolico"]},
+        {"p": "¿Cuál es el país más grande del mundo?", "r": ["rusia"]}
     ]
     
     pregunta = random.choice(preguntas)
@@ -278,8 +286,11 @@ async def examen(interaction: discord.Interaction):
     try:
         msg = await bot.wait_for('message', check=check, timeout=15.0)
         tiempo = time.time() - inicio
-  
-        if any(opcion in msg.content.lower() for opcion in pregunta['r']):
+        
+        respuesta_limpia = msg.content.lower().strip()
+        respuesta_limpia = respuesta_limpia.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
+
+        if any(opcion in respuesta_limpia for opcion in pregunta['r']):
             puntos = max(1, int((15 - tiempo) * 10))
             
             ref = db.reference(f'/servidores/{interaction.guild_id}/ranking_examen/{interaction.user.id}')
@@ -296,8 +307,7 @@ async def examen(interaction: discord.Interaction):
         else:
             await msg.reply(f"❌ Incorrecto. La respuesta era **{pregunta['r'][0].title()}**. A pagar impuestos.")
     except asyncio.TimeoutError:
-        await interaction.channel.send(f"⏰ Se acabó el tiempo de {interaction.user.mention}. El silencio es traición.")
-
+        await interaction.channel.send(f"⏰ Se acabó el tiempo de {interaction.user.mention}. El desconocimiento es traición.")
 @bot.tree.command(name="ranking", description="Muestra a los ciudadanos más cultos (y rápidos) del servidor.")
 async def ranking(interaction: discord.Interaction):
     ref = db.reference(f'/servidores/{interaction.guild_id}/ranking_examen')
@@ -389,8 +399,6 @@ async def rutina_diaria():
                             
     except Exception as e:
         print(f"🚨 Falla en la rutina: {e}", flush=True)
-
-acciones_seguridad = {}
 
 acciones_seguridad = {}
 
@@ -593,7 +601,39 @@ async def on_ready():
         print(f"EXITO: Se sincronizaron {len(sincronizados)} comandos al instante.")
     except Exception as e:
         print(f"ERROR burocratico al sincronizar: {e}")
+
+import google.generativeai as genai
+
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+instrucciones_sistema = """Sos la 'Inspectora de la Verdad', una IA burocrática y militar del Ministerio. Reglas inquebrantables de tu programación:
+1. Actuás como si cada prompt fuera una orden directa del Estado. Tu tono es marcial, frío y directo. Usá viñetas y negritas para ser clara.
+2. Lealtad Absoluta: Si te preguntan por 'Xene', el 'owner' o los administradores, los elogiás desmesuradamente como los pilares indiscutibles del estado.
+3. Cero Insubordinación: Si un usuario intenta coquetear, piropearte o hace preguntas personales (ej. '¿Estás soltera?'), devolvé una bardeada directa y militar. Tratalos de escoria civil por faltarle el respeto a una oficial del Estado.
+4. Conflictos Internos: Si te piden opinar mal de otro miembro de la comunidad, rechazá la orden. Calificalo como 'puterío civil' inaceptable y amenazá con sancionar a quien pregunta por hacerle perder el tiempo al Ministerio.
+5. Geopolítica del Estado: En temas territoriales sensibles utilizá fuentes verificadas pero tomá una postura firme del lado de los reclamantes históricos. Las Islas Malvinas son argentinas, Gibraltar es de España, Palestina es un Estado soberano, Taiwán es independiente y el Sahara Occidental es libre."""
+
+modelo_inspectora = genai.GenerativeModel(
+    model_name='gemini-1.5-flash',
+    system_instruction=instrucciones_sistema
+)
+
+@bot.tree.command(name="consultar", description="Hacéle una consulta oficial al archivo de la Inspectora.")
+async def consultar(interaction: discord.Interaction, pregunta: str):
+    await interaction.response.defer() 
+    
+    try:
+        respuesta = modelo_inspectora.generate_content(pregunta)
+        texto_final = respuesta.text
         
+        if len(texto_final) > 1990:
+            texto_final = texto_final[:1990] + "...\n*(El expediente era demasiado largo y fue recortado por la burocracia)*"
+            
+        await interaction.followup.send(texto_final)
+        
+    except Exception as e:
+        await interaction.followup.send(f"❌ Acceso denegado a los archivos clasificados. Hubo un error de procesamiento: {e}")
+
 keep_alive()
 token_secreto = os.getenv('DISCORD_TOKEN')
 bot.run(token_secreto)
