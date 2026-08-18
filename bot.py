@@ -113,7 +113,26 @@ async def transmision_oficial():
 async def on_message(message):
     if message.author == bot.user:
         return
-    
+    if message.reference is not None:
+        try:
+            msg_referenciado = await message.channel.fetch_message(message.reference.message_id)
+            if msg_referenciado.author == bot.user and len(msg_referenciado.content) > 150:
+                async with message.channel.typing():
+                    prompt_contexto = f"Dictamen oficial previo tuyo: '{msg_referenciado.content[:500]}...'\n\nRespuesta del civil: '{message.content}'\n\nRetrucá a este ciudadano manteniendo tu rol autoritario y marcial."
+                    
+                    respuesta = modelo_inspectora.generate_content(prompt_contexto)
+                    texto_final = respuesta.text
+                    
+                    if len(texto_final) > 1900:
+                        texto_final = texto_final[:1900] + "...\n\n*(El expediente fue recortado por la burocracia)*"
+                        
+                    await message.reply(texto_final)
+                return 
+        except Exception as e:
+            error_msj = str(e).lower()
+            if "429" in error_msj or "quota" in error_msj:
+                await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto. Vuelvan en un par de minutos.")
+            print(f"Error menor en respuesta al hilo: {e}")
     if len(message.mentions) > 5:
         await message.delete()
         try:
@@ -651,6 +670,7 @@ async def consultar(interaction: discord.Interaction, pregunta: str):
             
         else:
             await interaction.followup.send(f"❌ Acceso denegado a los archivos clasificados. Error interno: {str(e)[:150]}...")
+
 keep_alive()
 token_secreto = os.getenv('DISCORD_TOKEN')
 bot.run(token_secreto) 
