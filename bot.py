@@ -635,14 +635,22 @@ async def consultar(interaction: discord.Interaction, pregunta: str):
         respuesta = modelo_inspectora.generate_content(pregunta)
         texto_final = respuesta.text
         
-        if len(texto_final) > 1990:
-            texto_final = texto_final[:1990] + "...\n*(El expediente era demasiado largo y fue recortado por la burocracia)*"
+        if len(texto_final) > 1900:
+            texto_final = texto_final[:1900] + "...\n\n*(El expediente era demasiado extenso y fue recortado por la burocracia ministerial)*"
             
         await interaction.followup.send(texto_final)
         
     except Exception as e:
-        await interaction.followup.send(f"❌ Acceso denegado a los archivos clasificados. Hubo un error de procesamiento: {e}")
-
+        error_msj = str(e).lower()
+        
+        if "429" in error_msj or "quota" in error_msj:
+            await interaction.followup.send("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto con tantos reclamos, Google nos da un tiempo de refresco minimo entre consulta y consulta. Hagan fila y vuelvan a intentar en un par de minutos, civiles.")
+            
+        elif "50035" in error_msj or "2000" in error_msj:
+            await interaction.followup.send("📜 **EXPEDIENTE RECHAZADO:** La resolución de la Inspectora era tan extensa que violó la Constitución de Discord (límite de caracteres). Formulá tu consulta de manera más acotada.")
+            
+        else:
+            await interaction.followup.send(f"❌ Acceso denegado a los archivos clasificados. Error interno: {str(e)[:150]}...")
 keep_alive()
 token_secreto = os.getenv('DISCORD_TOKEN')
 bot.run(token_secreto) 
