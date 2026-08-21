@@ -563,6 +563,8 @@ import datetime
 
 @bot.tree.command(name="advertir", description="Labra un acta de infracción a un ciudadano (Sistema de 3 strikes).")
 async def advertir(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
+    if usuario.id == bot.user.id:
+        return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** No podés procesar a una oficial en funciones del Ministerio. El Estado es intocable.", ephemeral=True)
     ref_faltas = db.reference(f'/servidores/{interaction.guild.id}/usuarios/{usuario.id}/advertencias')
     faltas_actuales = ref_faltas.get()
     
@@ -584,12 +586,16 @@ async def advertir(interaction: discord.Interaction, usuario: discord.Member, mo
 
 @bot.tree.command(name="expulsar", description="Deporta a un ciudadano del servidor.")
 async def expulsar(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
+    if usuario.id == bot.user.id:
+        return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** No podés procesar a una oficial en funciones del Ministerio. El Estado es intocable.", ephemeral=True)
     await usuario.kick(reason=motivo)
     await interaction.response.send_message(f"✅ {usuario.name} fue deportado exitosamente.", ephemeral=True)
     await publicar_escrache(interaction, usuario, "DEPORTACIÓN (KICK)", motivo)
     
 @bot.tree.command(name="banear", description="Exilia a un ciudadano del servidor de forma permanente.")
 async def banear(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
+    if usuario.id == bot.user.id:
+        return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** No podés procesar a una oficial en funciones del Ministerio. El Estado es intocable.", ephemeral=True)
     try:
         await usuario.ban(reason=motivo)
         await interaction.response.send_message(f"✅ Se ejecutó el exilio definitivo de {usuario.name}.", ephemeral=True)
@@ -608,6 +614,8 @@ async def banear(interaction: discord.Interaction, usuario: discord.Member, moti
     
 @bot.tree.command(name="aislar", description="Incomunica a un ciudadano por un tiempo determinado.")
 async def aislar(interaction: discord.Interaction, usuario: discord.Member, minutos: int, motivo: str):
+    if usuario.id == bot.user.id:
+        return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** No podés procesar a una oficial en funciones del Ministerio. El Estado es intocable.", ephemeral=True)
     tiempo = discord.utils.utcnow() + datetime.timedelta(minutos=minutos)
     await usuario.timeout(tiempo, reason=motivo)
     await interaction.response.send_message(f"✅ {usuario.name} fue aislado por {minutos} minutos.", ephemeral=True)
