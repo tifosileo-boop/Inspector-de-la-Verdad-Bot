@@ -590,9 +590,21 @@ async def expulsar(interaction: discord.Interaction, usuario: discord.Member, mo
     
 @bot.tree.command(name="banear", description="Exilia a un ciudadano del servidor de forma permanente.")
 async def banear(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
-    await usuario.ban(reason=motivo)
-    await interaction.response.send_message(f"✅ Se ejecutó el exilio definitivo de {usuario.name}.", ephemeral=True)
-    await publicar_escrache(interaction, usuario, "EXILIO DEFINITIVO (BAN)", motivo)
+    try:
+        await usuario.ban(reason=motivo)
+        await interaction.response.send_message(f"✅ Se ejecutó el exilio definitivo de {usuario.name}.", ephemeral=True)
+        
+        canal_id = db.reference(f'/servidores/{interaction.guild.id}/canal_alertas').get()
+        
+        if not canal_id:
+            await interaction.followup.send("⚠️ **Atención:** El ban se ejecutó, pero no tenés configurado el ID del `canal_alertas` en Firebase. El escrache público no se pudo publicar.", ephemeral=True)
+        else:
+            await publicar_escrache(interaction, usuario, "EXILIO DEFINITIVO (BAN)", motivo)
+    
+    except discord.Forbidden:
+        await interaction.response.send_message(f"❌ **Incompetencia de jurisdicción:** El Ministerio no tiene permisos para banear a {usuario.name} (tiene un rol superior al mío o es el dueño).", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ **Error en el procedimiento penal:** {e}", ephemeral=True)
     
 @bot.tree.command(name="aislar", description="Incomunica a un ciudadano por un tiempo determinado.")
 async def aislar(interaction: discord.Interaction, usuario: discord.Member, minutos: int, motivo: str):
