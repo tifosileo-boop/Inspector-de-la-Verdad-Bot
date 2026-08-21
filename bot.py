@@ -558,54 +558,49 @@ async def reportar(interaction: discord.Interaction, sospechoso: discord.Member,
         await interaction.response.send_message(f"✅ Tu denuncia contra {sospechoso.display_name} fue radicada con éxito.", ephemeral=True)
     else:
         await interaction.response.send_message("❌ El canal de denuncias configurado ya no existe o fue borrado. Avísenle a un admin.", ephemeral=True)
-
-@bot.tree.command(name="aislar", description="Manda a un disidente al calabozo (Timeout temporal).")
-async def aislar(interaction: discord.Interaction, sospechoso: discord.Member, minutos: int, motivo: str):
-    if not interaction.user.guild_permissions.moderate_members:
-        await interaction.response.send_message("❌ Alto ahí. Te faltan sellos ministeriales para aislar gente.", ephemeral=True)
-        return
-    try:
-        tiempo_aislado = datetime.timedelta(minutes=minutos)
-        await sospechoso.timeout(tiempo_aislado, reason=motivo)
-        await interaction.response.send_message(f"🔨 {sospechoso.mention} fue aislado de la sociedad por {minutos} minutos.\n**Cargo:** {motivo}")
-    except Exception as e:
-        await interaction.response.send_message(f"⚠️ Error al procesar la condena: {e}", ephemeral=True)
-    
-@bot.tree.command(name="expulsar", description="Deporta a un disidente del servidor (Kick).")
-async def expulsar(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str = "Traición al Estado"):
-    if not interaction.user.guild_permissions.kick_members:
-        await interaction.response.send_message("❌ Te faltan credenciales para deportar ciudadanos.", ephemeral=True)
-        return
-    try:
-        await sospechoso.kick(reason=motivo)
-        await interaction.response.send_message(f"👢 {sospechoso.mention} fue deportado del territorio.\n**Motivo:** {motivo}")
-    except Exception as e:
-        await interaction.response.send_message(f"⚠️ Falla burocrática al expulsar: {e}", ephemeral=True)
-
-@bot.tree.command(name="advertir", description="Anota un strike en el legajo de un ciudadano.")
-async def advertir(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str):
-    if not interaction.user.guild_permissions.moderate_members:
-        await interaction.response.send_message("❌ No tenés jurisdicción para advertir.", ephemeral=True)
-        return
         
-    sospechoso_id = str(sospechoso.id)
-    ref = db.reference(f'/servidores/{interaction.guild_id}/legajos_penales/{sospechoso_id}')
+import datetime 
+
+@bot.tree.command(name="advertir", description="Labra un acta de infracción a un ciudadano (Sistema de 3 strikes).")
+async def advertir(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
+    ref_faltas = db.reference(f'/servidores/{interaction.guild.id}/usuarios/{usuario.id}/advertencias')
+    faltas_actuales = ref_faltas.get()
     
-    faltas_actuales = ref.get()
     if faltas_actuales is None:
         faltas_actuales = 0
         
     nuevas_faltas = faltas_actuales + 1
-    ref.set(nuevas_faltas)
+    ref_faltas.set(nuevas_faltas)
     
-    try:
-        await sospechoso.send(f"⚠️ **Atención del Ministerio de la Verdad** ⚠️\nRecibiste una advertencia oficial.\n**Cargo:** {motivo}\n**Faltas acumuladas:** {nuevas_faltas}")
-    except discord.Forbidden:
-        pass
+    if nuevas_faltas < 3:
+        tipo_sancion = f"ADVERTENCIA FORMAL ({nuevas_faltas}/3)"
+        mensaje_admin = f"✅ Acta labrada. {usuario.name} tiene {nuevas_faltas}/3 faltas."
+    else:
+        tipo_sancion = f"🚨 ADVERTENCIA CRÍTICA ({nuevas_faltas}/3) - LÍMITE ALCANZADO"
+        mensaje_admin = f"⚠️ ¡ATENCIÓN! {usuario.name} alcanzó las {nuevas_faltas} faltas. Requiere acción drástica."
+
+    await interaction.response.send_message(mensaje_admin, ephemeral=True)
+    await publicar_escrache(interaction, usuario, tipo_sancion, motivo)
+
+@bot.tree.command(name="expulsar", description="Deporta a un ciudadano del servidor.")
+async def expulsar(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
+    await usuario.kick(reason=motivo)
+    await interaction.response.send_message(f"✅ {usuario.name} fue deportado exitosamente.", ephemeral=True)
+    await publicar_escrache(interaction, usuario, "DEPORTACIÓN (KICK)", motivo)
+    
+@bot.tree.command(name="banear", description="Exilia a un ciudadano del servidor de forma permanente.")
+async def banear(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
+    await usuario.ban(reason=motivo)
+    await interaction.response.send_message(f"✅ Se ejecutó el exilio definitivo de {usuario.name}.", ephemeral=True)
+    await publicar_escrache(interaction, usuario, "EXILIO DEFINITIVO (BAN)", motivo)
+    
+@bot.tree.command(name="aislar", description="Incomunica a un ciudadano por un tiempo determinado.")
+async def aislar(interaction: discord.Interaction, usuario: discord.Member, minutos: int, motivo: str):
+    tiempo = discord.utils.utcnow() + datetime.timedelta(minutos=minutos)
+    await usuario.timeout(tiempo, reason=motivo)
+    await interaction.response.send_message(f"✅ {usuario.name} fue aislado por {minutos} minutos.", ephemeral=True)
+    await publicar_escrache(interaction, usuario, f"AISLAMIENTO ({minutos} MINUTOS)", motivo)
         
-    await interaction.response.send_message(f"📝 Se anotó un strike (Falta {nuevas_faltas}) para {sospechoso.mention}.\n**Motivo:** {motivo}")
-
-
 @bot.tree.command(name="indulto", description="Limpia los antecedentes penales de un ciudadano.")
 async def indulto(interaction: discord.Interaction, ciudadano: discord.User):
     if not interaction.user.guild_permissions.ban_members:
@@ -621,19 +616,27 @@ async def indulto(interaction: discord.Interaction, ciudadano: discord.User):
         ref.delete()
         await interaction.response.send_message(f"🕊️ **INDULTO OTORGADO:** Los antecedentes de {ciudadano.mention} fueron borrados. Vuelve a fojas cero.")
 
-
-@bot.tree.command(name="banear", description="Exilia permanentemente a un enemigo del Estado (Ban).")
-async def banear(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str = "Enemigo público"):
-    if not interaction.user.guild_permissions.ban_members:
-        await interaction.response.send_message("❌ No tenés el rango necesario para firmar exilios.", ephemeral=True)
-        return
-    
+async def publicar_escrache(interaction: discord.Interaction, usuario: discord.Member, tipo_sancion: str, motivo: str):
     try:
-        db.reference(f'/servidores/{interaction.guild_id}/legajos_penales/{str(sospechoso.id)}').delete()
-        await sospechoso.ban(reason=motivo)
-        await interaction.response.send_message(f"🛑 {sospechoso.mention} fue exiliado de por vida y su legajo fue purgado de la base de datos.\n**Cargo:** {motivo}")
+        canal_id = db.reference(f'/servidores/{interaction.guild.id}/canal_alertas').get()
+        if canal_id:
+            canal_escrache = interaction.client.get_channel(1540161577863614594)
+            if canal_escrache:
+                embed_penal = discord.Embed(
+                    title="🚨 REGISTRO PENAL DEL MINISTERIO 🚨",
+                    description=f"El ciudadano {usuario.mention} ha sido procesado por las fuerzas de seguridad.",
+                    color=discord.Color.red()
+                )
+                foto_perfil = usuario.avatar.url if usuario.avatar else usuario.default_avatar.url
+                embed_penal.set_thumbnail(url=foto_perfil)
+                embed_penal.add_field(name="⚖️ Sanción Aplicada", value=tipo_sancion, inline=False) 
+                embed_penal.add_field(name="📜 Motivo del Fallo", value=motivo, inline=False)
+                embed_penal.add_field(name="👮 Oficial a Cargo", value=interaction.user.mention, inline=True)
+                embed_penal.set_footer(text="El Ministerio no perdona ni olvida. Gloria al servidor.")
+                
+                await canal_escrache.send(embed=embed_penal)
     except Exception as e:
-        await interaction.response.send_message(f"⚠️ Error procesal al aplicar el ban: {e}", ephemeral=True)
+        print(f"Error procesal al enviar el expediente público: {e}")
 
 @bot.event
 async def on_ready():
