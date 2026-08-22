@@ -156,19 +156,35 @@ async def on_message(message):
             if "429" in error_msj or "quota" in error_msj:
                 await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto. Vuelvan en un par de minutos.")
             print(f"Error menor en respuesta al hilo: {e}")
-    if len(message.mentions) > 5:
-        await message.delete()
-        try:
-            await message.author.kick(reason="Protocolo Anti-Nuke: Spam masivo de menciones")
-            canal_id = db.reference(f'/servidores/{message.guild.id}/canal_alertas').get()
-            if canal_id:
-                canal_seguridad = bot.get_channel(canal_id)
-                if canal_seguridad:
-                    await canal_seguridad.send(f"🚨 **DEFENSA ACTIVADA:** El usuario {message.author.name} intentó un ping masivo. Fue ejecutado en el acto.")
-        except Exception as e:
-            print(f"Error burocrático al expulsar: {e}")
-        return
+    if not message.author.bot and len(message.content) > 300:
+        palabras = message.content.lower().split()
+    
+        if len(palabras) > 10:
+            palabras_unicas = set(palabras)
+            ratio_unicidad = len(palabras_unicas) / len(palabras)
+            
+            es_spam_repetitivo = ratio_unicidad < 0.25 
+            es_spam_vertical = message.content.count('\n') > 20 
 
+            if es_spam_repetitivo or es_spam_vertical:
+                await message.delete()
+                try:
+                    await message.author.kick(reason="Protocolo Antidisturbios: Spam repetitivo (Raid)")
+                    
+                    canal_id = db.reference(f'/servidores/{message.guild.id}/canal_alertas').get()
+                    if canal_id:
+                        canal_seguridad = bot.get_channel(canal_id)
+                        if canal_seguridad:
+                            embed_raid = discord.Embed(
+                                title="🚨 DEFENSA TERRITORIAL ACTIVADA 🚨",
+                                description=f"Se neutralizó un ataque. El civil {message.author.mention} intentó saturar el canal con un muro de texto repetitivo y fue deportado.",
+                                color=discord.Color.dark_red()
+                            )
+                            await canal_seguridad.send(embed=embed_raid)
+                except Exception as e:
+                    print(f"Error burocrático al repeler el raid: {e}")
+                return
+ 
     if bot.user in message.mentions:
         respuestas_mencion = [
             "Otra solución a tú aburrimiento es probando el !examen que Xene desarrolló para ustedes... Es corto, pero es algo",
@@ -483,6 +499,7 @@ async def on_guild_channel_delete(channel):
 
 registro_creacion_canales = {}
 
+    
 @bot.event
 async def on_guild_channel_create(channel):
     async for entry in channel.guild.audit_logs(action=discord.AuditLogAction.channel_create, limit=1):
@@ -516,6 +533,40 @@ async def on_guild_channel_create(channel):
                             await canal_seguridad.send(f"🚨 **DEFENSA ACTIVADA:** El usuario {atacante.name} intentó un atentado. Fue ejecutado.")
                 except Exception as e:
                     print(f"Error burocrático al detener nuke: {e}")
+
+@bot.tree.command(name="check", description="Ejecuta una auditoría de seguridad del servidor.")
+async def check(interaction: discord.Interaction):
+    await interaction.response.defer()
+
+    niveles_verif = {
+        discord.VerificationLevel.none: "Ninguno 🔴 (Riesgo Crítico)",
+        discord.VerificationLevel.low: "Bajo 🟠 (Requiere email)",
+        discord.VerificationLevel.medium: "Medio 🟡 (Registrado por 5 min)",
+        discord.VerificationLevel.high: "Alto 🟢 (En el server por 10 min)",
+        discord.VerificationLevel.highest: "Máximo 🔵 (Teléfono verificado)"
+    }
+    nivel_verif = niveles_verif.get(interaction.guild.verification_level, "Desconocido")
+
+    admins = sum(1 for m in interaction.guild.members if m.guild_permissions.administrator and not m.bot)
+    bots_admins = sum(1 for m in interaction.guild.members if m.guild_permissions.administrator and m.bot)
+
+    canal_id = db.reference(f'/servidores/{interaction.guild.id}/canal_alertas').get()
+    estado_alertas = "✅ Operativo y conectado" if canal_id else "❌ Desconectado (Urgente: Configurar)"
+
+    embed = discord.Embed(
+        title="🛡️ AUDITORÍA DE SEGURIDAD DEL MINISTERIO",
+        description="Estado actual de las defensas del servidor frente a amenazas externas e internas.",
+        color=discord.Color.blue()
+    )
+    
+    embed.add_field(name="🛂 Control Fronterizo (Verificación)", value=nivel_verif, inline=False)
+    embed.add_field(name="🎖️ Jerarquías de Administrador", value=f"Civiles con acceso total: **{admins}**\nAutómatas del Estado: **{bots_admins}**", inline=False)
+    embed.add_field(name="📡 Red de Escrache Público", value=estado_alertas, inline=False)
+    
+    embed.set_thumbnail(url=interaction.guild.icon.url if interaction.guild.icon else None)
+    embed.set_footer(text="La seguridad es un deber, no un privilegio. Gloria al servidor.")
+
+    await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="set_oficina", description="Define el canal donde llegarán los reportes de este servidor.")
 async def set_oficina(interaction: discord.Interaction, canal: discord.TextChannel):
