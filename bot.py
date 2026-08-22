@@ -383,50 +383,53 @@ async def ranking(interaction: discord.Interaction):
         
     await interaction.response.send_message(tabla)
     
-@bot.tree.command(name="ayuda", description="Manual del buen ciudadano. Conocé tus derechos (y obligaciones).")
-async def ayuda(interaction: discord.Interaction):
+@bot.tree.command(name="info", description="Accede al manual operativo y de comandos del Ministerio.")
+async def info(interaction: discord.Interaction):
     embed = discord.Embed(
-        title="🏛️ Manual del Buen Ciudadano",
-        description="Prestá atención. Soy la Inspectora del Ministerio de la Verdad y mi trabajo es mantener el orden en este territorio. Acá tenés las herramientas oficiales:",
-        color=discord.Color.dark_red()
+        title="📜 MANUAL OPERATIVO DEL MINISTERIO",
+        description="Soy la Inspectora de la Verdad, oficial de seguridad encargada de mantener el orden civil y repeler amenazas externas.",
+        color=discord.Color.dark_theme()
     )
     
+    # --- SISTEMAS PÚBLICOS Y PASIVOS ---
     embed.add_field(
-        name="📚 Deberes Cívicos",
-        value=(
-            "**`/presente`** ➔ Fichá tu lealtad diaria al Estado. Si colgás más de 32hs, perdés tu historial.\n"
-            "**`/examen`** ➔ Respondé contra reloj y demostrá tu intelecto para sumar crédito social.\n"
-            "**`/ranking`** ➔ Mirá el Cuadro de Honor con los ciudadanos ejemplares del servidor."
-        ),
+        name="🤖 Interacción e IA",
+        value="Mencioname en el chat con el comando /consultar para debatir con memoria procesal y doctrina cosmopolita. Además, el Estado cuenta con un sistema de **respuestas automáticas** para agilizar trámites frecuentes y mantener el orden del chat. Si el chat es activo, podrás ver como patrullo cada cierto tiempo mandando mensajes a la comunidad en el chat general",
         inline=False
     )
     
     embed.add_field(
-        name="🚨 Orden y Disciplina",
-        value=(
-            "**`/reportar`** ➔ ¿Viste a un traidor o alguien rompiendo las reglas? Denuncialo. El reporte es confidencial.\n"
-            "**`!queja <texto>`** ➔ El buzón de sugerencias. Todo lo que escribas acá irá directo a la trituradora de papel."
-        ),
+        name="🏛️ Vida Cívica y Académica",
+        value="**• /Exámenes:** Poné a prueba tus conocimientos sobre la doctrina del servidor.\n**• /Presente:** Firmá tu asistencia diaria para sumar mérito.\n**• /Ranking:** Consultá el escalafón público de los ciudadanos más destacados.",
         inline=False
     )
     
     embed.add_field(
-        name="⚖️ Herramientas Ministeriales (Solo Admins)",
-        value=(
-            "Los altos mandos controlan el Estado con `/advertir`, `/aislar`, `/expulsar`, `/banear` y `/indulto`. "
-            "También gestionan la burocracia con `/configurar` y `/set_oficina`. Portate bien para no conocer estos comandos desde adentro."
-        ),
+        name="🛡️ Protocolos Automatizados (Defensas)",
+        value="**• Aduana:** Expulsión preventiva de cuentas menores a 24hs.\n**• Estado de Sitio:** Bloqueo de chat ante incursiones masivas (Anti-Zerg).\n**• Antidisturbios:** Deportación por muros de texto o spam repetitivo.\n**• Anti-Nuke:** Bloqueo por exceso de menciones (Pings).",
         inline=False
     )
-    embed.add_field(
-        name="Consultas a la inspectora",
-        value=(
-            "🔹 /consultar [tu_duda]: Eleva una petición a la red de inteligencia del Ministerio de la Verdad."
-            " (Advertencia: Las preguntas civiles frívolas serán castigadas con todo el peso de la ley)."
-        ),
-        inline=False
-    )
-    embed.set_footer(text="La Inspectora te observa. Gloria al servidor.")
+    
+    if interaction.user.guild_permissions.administrator:
+        embed.add_field(
+            name="⚖️ Código Penal (Solo Oficiales)",
+            value="`/advertir` - Labra un acta (Strike 1 a 3).\n`/aislar` - Incomunica a un ciudadano por tiempo definido.\n`/expulsar` - Deporta a un usuario del servidor.\n`/banear` - Ejecuta el exilio definitivo.",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="🏢 Gestión del Estado (Solo Oficiales)",
+            value="`/check` - Auditoría completa de defensas y jerarquías.\n`/levantar_sitio` - Restaura garantías tras una invasión.\n`!sinc` - Sincroniza el árbol jurisdiccional.",
+            inline=False
+        )
+    else:
+        embed.add_field(
+            name="🔒 Archivos Clasificados",
+            value="*El acceso al Código Penal y Comandos de Gestión está restringido únicamente para Altos Mandos del Ministerio.*",
+            inline=False
+        )
+    
+    embed.set_footer(text="La ignorancia de la ley no exime de su cumplimiento. Gloria al servidor.")
     
     await interaction.response.send_message(embed=embed)
 
@@ -533,6 +536,74 @@ async def on_guild_channel_create(channel):
                             await canal_seguridad.send(f"🚨 **DEFENSA ACTIVADA:** El usuario {atacante.name} intentó un atentado. Fue ejecutado.")
                 except Exception as e:
                     print(f"Error burocrático al detener nuke: {e}")
+import time
+
+registro_migratorio = {}
+estado_de_sitio = False
+
+@bot.event
+async def on_member_join(member):
+    global estado_de_sitio
+    ahora = time.time()
+    guild_id = member.guild.id
+    
+    edad_cuenta = discord.utils.utcnow() - member.created_at
+    if edad_cuenta.total_seconds() < 86400: 
+        try:
+            await member.kick(reason="Aduana: Cuenta demasiado reciente (Posible Alt de Raid).")
+        except:
+            pass
+        return
+
+    if guild_id not in registro_migratorio:
+        registro_migratorio[guild_id] = []
+        
+    registro_migratorio[guild_id] = [t for t in registro_migratorio[guild_id] if ahora - t < 10]
+    registro_migratorio[guild_id].append(ahora)
+    
+    if len(registro_migratorio[guild_id]) >= 5 and not estado_de_sitio:
+        estado_de_sitio = True
+        try:
+            await member.guild.default_role.edit(send_messages=False, reason="Protocolo Anti-Zerg: Invasión detectada.")
+            
+            canal_id = db.reference(f'/servidores/{guild_id}/canal_alertas').get()
+            if canal_id:
+                canal_seguridad = bot.get_channel(canal_id)
+                if canal_seguridad:
+                    embed = discord.Embed(
+                        title="🚨 ESTADO DE SITIO DECLARADO 🚨",
+                        description="Se detectó una incursión masiva coordinada. El Ministerio ha cerrado las fronteras y suspendido las garantías.\n\n**Nadie puede enviar mensajes** hasta que la seguridad esté garantizada.",
+                        color=discord.Color.dark_red()
+                    )
+                    await canal_seguridad.send(embed=embed)
+        except Exception as e:
+            print(f"Error procesal al declarar el Estado de Sitio: {e}")
+
+@bot.tree.command(name="levantar_sitio", description="Restablece las garantías y levanta el estado de sitio.")
+async def levantar_sitio(interaction: discord.Interaction):
+    global estado_de_sitio
+    
+    try:
+        await interaction.guild.default_role.edit(send_messages=True, reason="El Ministerio declara el fin del Estado de Sitio.")
+        estado_de_sitio = False
+        
+        await interaction.response.send_message("✅ Estado de Sitio levantado con éxito. El orden ha sido restaurado.", ephemeral=True)
+        
+        canal_id = db.reference(f'/servidores/{interaction.guild.id}/canal_alertas').get()
+        if canal_id:
+            canal_seguridad = bot.get_channel(canal_id)
+            if canal_seguridad:
+                embed_paz = discord.Embed(
+                    title="🕊️ ESTADO DE SITIO LEVANTADO 🕊️",
+                    description="El Ministerio informa que la amenaza externa fue erradicada. Se restauran las libertades civiles en todos los canales.",
+                    color=discord.Color.green()
+                )
+                await canal_seguridad.send(embed=embed_paz)
+                
+    except discord.Forbidden:
+        await interaction.response.send_message("❌ Incompetencia: No tengo permisos suficientes para editar el rol @everyone.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Error procesal: {e}", ephemeral=True)
 
 @bot.tree.command(name="check", description="Ejecuta una auditoría de seguridad del servidor.")
 async def check(interaction: discord.Interaction):
