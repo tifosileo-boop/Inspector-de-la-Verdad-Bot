@@ -157,33 +157,34 @@ async def on_message(message):
                 await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto. Vuelvan en un par de minutos.")
             print(f"Error menor en respuesta al hilo: {e}")
     if not message.author.bot and len(message.content) > 300:
-        palabras = message.content.lower().split()
-    
-        if len(palabras) > 10:
-            palabras_unicas = set(palabras)
-            ratio_unicidad = len(palabras_unicas) / len(palabras)
+        if not message.author.guild_permissions.administrator:
+            palabras = message.content.lower().split()
             
-            es_spam_repetitivo = ratio_unicidad < 0.25 
-            es_spam_vertical = message.content.count('\n') > 20 
+            if len(palabras) > 10:
+                palabras_unicas = set(palabras)
+                ratio_unicidad = len(palabras_unicas) / len(palabras)
+                
+                es_spam_repetitivo = ratio_unicidad < 0.25 
+                es_spam_vertical = message.content.count('\n') > 20 
 
-            if es_spam_repetitivo or es_spam_vertical:
-                await message.delete()
-                try:
-                    await message.author.kick(reason="Protocolo Antidisturbios: Spam repetitivo (Raid)")
-                    
-                    canal_id = db.reference(f'/servidores/{message.guild.id}/canal_alertas').get()
-                    if canal_id:
-                        canal_seguridad = bot.get_channel(canal_id)
-                        if canal_seguridad:
-                            embed_raid = discord.Embed(
-                                title="🚨 DEFENSA TERRITORIAL ACTIVADA 🚨",
-                                description=f"Se neutralizó un ataque. El civil {message.author.mention} intentó saturar el canal con un muro de texto repetitivo y fue deportado.",
-                                color=discord.Color.dark_red()
-                            )
-                            await canal_seguridad.send(embed=embed_raid)
-                except Exception as e:
-                    print(f"Error burocrático al repeler el raid: {e}")
-                return
+                if es_spam_repetitivo or es_spam_vertical:
+                    await message.delete()
+                    try:
+                        await message.author.kick(reason="Protocolo Antidisturbios: Spam repetitivo (Raid)")
+                        
+                        canal_id = db.reference(f'/servidores/{message.guild.id}/canal_alertas').get()
+                        if canal_id:
+                            canal_seguridad = bot.get_channel(canal_id)
+                            if canal_seguridad:
+                                embed_raid = discord.Embed(
+                                    title="🚨 DEFENSA TERRITORIAL ACTIVADA 🚨",
+                                    description=f"Se neutralizó un ataque. El civil {message.author.mention} intentó saturar el canal con un muro de texto repetitivo y fue deportado.",
+                                    color=discord.Color.dark_red()
+                                )
+                                await canal_seguridad.send(embed=embed_raid)
+                    except Exception as e:
+                        print(f"Error burocrático al repeler el raid: {e}")
+                    return
  
     if bot.user in message.mentions:
         respuestas_mencion = [
