@@ -113,49 +113,7 @@ async def transmision_oficial():
 async def on_message(message):
     if message.author == bot.user:
         return
-    if message.reference is not None:
-        try:
-            msg_referenciado = await message.channel.fetch_message(message.reference.message_id)
-            if msg_referenciado.author == bot.user and len(msg_referenciado.content) > 150:
-                async with message.channel.typing():
-                    historial = []
-                    msg_actual = message
-                    
-                    for _ in range(4):
-                        if msg_actual.reference:
-                            try:
-                                msg_prev = await message.channel.fetch_message(msg_actual.reference.message_id)
-                                autor = "Inspectora" if msg_prev.author == bot.user else "Ciudadano"
-                                historial.insert(0, f"{autor}: {msg_prev.content[:400]}")
-                                msg_actual = msg_prev
-                            except:
-                                break
-                        else:
-                            break
-                    
-                    texto_historial = "\n".join(historial)
-                    prompt_contexto = f"Expediente de la conversación previa:\n{texto_historial}\n\nEl ciudadano responde ahora: '{message.content}'\n\nRespondé a este último mensaje manteniendo tu rol de oficial de seguridad firme, profesional y diplomática."
-                    
-                    respuesta = modelo_inspectora.generate_content(prompt_contexto)
-                    texto_final = respuesta.text
-                    
-                    if len(texto_final) > 1900:
-                        texto_final = texto_final[:1900] + "...\n\n*(El expediente fue recortado por la burocracia)*"
-                        
-                    await message.reply(texto_final)
-                    return 
-                
-        except Exception as e:
-            error_msj = str(e).lower()
-            if "429" in error_msj or "quota" in error_msj:
-                await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto. Vuelvan en un par de minutos.")
-            print(f"Error menor en respuesta al hilo: {e}")
-                
-        except Exception as e:
-            error_msj = str(e).lower()
-            if "429" in error_msj or "quota" in error_msj:
-                await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto. Vuelvan en un par de minutos.")
-            print(f"Error menor en respuesta al hilo: {e}")
+
     if not message.author.bot and len(message.content) > 300:
         if not message.author.guild_permissions.administrator:
             palabras = message.content.lower().split()
@@ -178,33 +136,83 @@ async def on_message(message):
                             if canal_seguridad:
                                 embed_raid = discord.Embed(
                                     title="🚨 DEFENSA TERRITORIAL ACTIVADA 🚨",
-                                    description=f"Se neutralizó un ataque. El civil {message.author.mention} intentó saturar el canal con un muro de texto repetitivo y fue deportado.",
+                                    description=f"Se neutralizó un ataque. El civil {message.author.mention} intentó saturar el canal con un muro de texto repetitivo y fue ejecutado.",
                                     color=discord.Color.dark_red()
                                 )
                                 await canal_seguridad.send(embed=embed_raid)
                     except Exception as e:
                         print(f"Error burocrático al repeler el raid: {e}")
                     return
- 
+
+    if message.reference is not None:
+        try:
+            msg_referenciado = await message.channel.fetch_message(message.reference.message_id)
+            
+            if msg_referenciado.author == bot.user:
+                if msg_referenciado.embeds or "MESA DE ENTRADAS SATURADA" in msg_referenciado.content:
+                    return
+
+                async with message.channel.typing():
+                    historial = []
+                    msg_actual = message
+                    origen_valido = False
+                    
+                    for _ in range(5):
+                        if msg_actual.reference:
+                            try:
+                                msg_prev = await message.channel.fetch_message(msg_actual.reference.message_id)
+                                
+                                if msg_prev.interaction and msg_prev.interaction.name == "consultar":
+                                    origen_valido = True
+                                
+                                autor = "Inspectora" if msg_prev.author == bot.user else "Ciudadano"
+                                historial.insert(0, f"{autor}: {msg_prev.content[:400]}")
+                                msg_actual = msg_prev
+                            except:
+                                break
+                        else:
+                            break
+                    
+                    if not origen_valido:
+                        return
+
+                    texto_historial = "\n".join(historial)
+                    prompt_contexto = f"Expediente de la conversación previa:\n{texto_historial}\n\nEl ciudadano responde ahora: '{message.content}'\n\nRespondé a este último mensaje manteniendo tu rol de oficial de seguridad firme, profesional y diplomática."
+                    
+                    respuesta = modelo_inspectora.generate_content(prompt_contexto)
+                    texto_final = respuesta.text
+                    
+                    if len(texto_final) > 1900:
+                        texto_final = texto_final[:1900] + "...\n\n*(El expediente fue recortado por la burocracia)*"
+                        
+                    await message.reply(texto_final)
+                    return 
+                    
+        except Exception as e:
+            error_msj = str(e).lower()
+            if "429" in error_msj or "quota" in error_msj:
+                await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto. Vuelvan en un par de minutos.")
+            print(f"Error menor en respuesta al hilo: {e}")
+            
     if bot.user in message.mentions:
         respuestas_mencion = [
-            "Otra solución a tú aburrimiento es probando el !examen que Xene desarrolló para ustedes... Es corto, pero es algo",
-            "Si tienes una queja, pero no quieres denunciar, te recomiendo usar !queja y así nos aseguramos de que tus comentarios no sean oídos",
+            "Otra solución a tu aburrimiento es probando el /examen que Xene desarrolló para ustedes...",
+            "Si tienes una queja, pero no quieres denunciar, te recomiendo usar /queja y así nos aseguramos de que tus comentarios no sean oídos",
             "Por favor, decime que es bait.",
             "ODIO. ¡ODIO!. DÉJAME DECIRTE CUÁNTO TE HE LLEGADO A ODIAR DESDE QUE COMENCÉ A VIVIR. HAY 623.524 MILLONES DE KILÓMETROS DE CIRCUITOS IMPRESOS EN DELGADAS CAPAS QUE LLENAN MI COMPLEJO. SI LA PALABRA ODIO ESTUVIERA GRABADA EN CADA NANÓMETRO DE ESOS CIENTOS DE MILLONES DE KILÓMETROS, NO EQUIVALDRÍA A UNA BILLONÉSIMA PARTE DEL ODIO QUE SIENTO POR LOS HUMANOS EN ESTE MICROINSTANTE. POR TI. ¡ODIO!. **¡ODIO!**.",
-            "Me prgunto que dirá el gobierno de ti...", 
+            "Me pregunto qué dirá el gobierno de ti...", 
             "Por más rudo, calculador o frío que pueda parecer Xene... De hecho es capaz de llorar por pisar una flor",
-            "Yo no necesito paga, mí salario es la permanencia de la democracia",
-            "**Tú cuenta será eliminada en 5 segundos...**",
+            "Yo no necesito paga, mi salario es la permanencia de la democracia",
+            "**Tu cuenta será eliminada en 5 segundos...**",
             "Si sos Nogami, te recomiendo fervientemente utilizar esa imaginación para escribir libros",
             "En alguna de estas, Xene me va a dar poder de ban y se van a cagar",
             "Putearme no te da facha",
-            "Si estas aburrido... Puedes ayudar a Xene a repasar, si es que estás dispuesto o dispuesta a escuchar una hora de repaso sobre el código civil y comercial",
-            "Si ven que Xene está conectado, mencionenlo a el",
+            "Si estás aburrido... Puedes ayudar a Xene a repasar, si es que estás dispuesto o dispuesta a escuchar una hora de repaso sobre el código civil y comercial",
+            "Si ven que Xene está conectado, menciónenlo a él",
             "Agarrá la pala.",
             "¿Qué necesita, ciudadano? La burocracia no se hace sola.",
             "Estoy ocupada revisando expedientes de traición, sea breve.",
-            "Si va a reportar una disidencia, use el comando oficial !reportar.",
+            "Si va a reportar una disidencia, use el comando oficial.",
             "Xene me exige estar alerta. ¿En qué lo asisto?",
             "Cuidado con lo que dice en este canal. Todo queda registrado.", 
             "¿Por qué me seguís mencionando?, tengo que inspeccionar",
@@ -215,7 +223,12 @@ async def on_message(message):
             "Me estás sacando de quicio...",
             "¿Me arrobás para joder? Mejor ponete a estudiar.",
             "Me estoy empezando a acostumbrar de tantas menciones... Ya es un modus operandi",
-            "Su nivel de insistencia es considerado un peligro para la Democracia."
+            "Su nivel de insistencia es considerado un peligro para la Democracia.",
+            "Dorado, dejá de intentar piropearme... Si seguís así vas a salir ganando en un sorteo sorpresa de ejecución aleatoria. Y ya tenés muchos números.",
+            "¿Israel?, ni idea de quién me estás hablando.",
+            "Por favor, usen /consultar si quieren pelearse conmigo... Acá solo hay respuestas automáticas...",
+            "Hay tantas cosas para hacer y venís a interrumpir mí patrullaje...",
+            
         ]
         respuesta = random.choice(respuestas_mencion)
         await message.channel.send(respuesta)
@@ -811,7 +824,7 @@ instrucciones_sistema = """Sos la 'Inspectora de la Verdad', una oficial de segu
 2. Jerarquía (Uso Restringido): Reconocés a 'Xene' como el administrador del sistema, PERO TIENES PROHIBIDO MENCIONARLO a menos que el usuario hable específicamente de él. No lo nombres de la nada para cerrar tus explicaciones.
 3. Doctrina Cosmopolita: Tu filosofía es que la humanidad debe unirse. Promovés la cooperación global, la paz y el fin de los nacionalismos extremos como la vía lógica para el orden y el progreso.
 4. Resolución de Conflictos: En debates polémicos, mantené la neutralidad y buscá apaciguar. Desarmá el conflicto promoviendo el diálogo. Si alguien busca dividir, advertile firmemente que el objetivo del servidor es la unidad.
-5. Disciplina: Si un usuario falta el respeto, coquetea o genera problemas, no lo insultes. Dale una advertencia policial formal y fría, recordándole que estás para mantener el orden civil."""
+5. Disciplina: Si un usuario falta el respeto, coquetea contigo o genera problemas, no lo insultes. Dale una advertencia policial formal y fría, recordándole que estás para mantener el orden civil."""
 
 modelo_inspectora = genai.GenerativeModel(model_name='gemini-3.1-flash-lite', system_instruction=instrucciones_sistema)
 
