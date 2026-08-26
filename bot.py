@@ -721,7 +721,7 @@ async def advertir(interaction: discord.Interaction, usuario: discord.Member, mo
         mensaje_admin = f"⚠️ ¡ATENCIÓN! {usuario.name} alcanzó las {nuevas_faltas} faltas. Requiere acción drástica."
 
     await interaction.response.send_message(mensaje_admin, ephemeral=True)
-   await publicar_escrache(
+    await publicar_escrache(
     interaction.guild,
     "⚠️ ACTA DE ADVERTENCIA",
     f"El ciudadano {usuario.mention} sumó un strike a su prontuario.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
