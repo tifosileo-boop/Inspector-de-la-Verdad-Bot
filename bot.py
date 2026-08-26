@@ -137,26 +137,15 @@ async def on_message(message):
                     await message.delete()
                     try:
                         await message.author.kick(reason="Protocolo Antidisturbios: Spam repetitivo (Raid)")
-                        
-                        canal_id = db.reference(f'/servidores/{message.guild.id}/canal_alertas').get()
-                        if canal_id:
-                            canal_seguridad = bot.get_channel(canal_id)
-                            if canal_seguridad:
-                                embed_raid = discord.Embed(
-                                    title="🚨 DEFENSA TERRITORIAL ACTIVADA 🚨",
-                                    description=f"Se neutralizó un ataque. El civil {message.author.mention} intentó saturar el canal con un muro de texto repetitivo y fue ejecutado.",
-                                    color=discord.Color.dark_red()
-                                )
-                                await canal_seguridad.send(embed=embed_raid)
+                        await publicar_escrache(
+                            message.guild,
+                            "🚨 DEFENSA TERRITORIAL ACTIVADA",
+                            f"Se neutralizó un ataque. El civil {message.author.mention} intentó saturar el canal con un muro de texto repetitivo y fue ejecutado en el acto.",
+                            discord.Color.dark_red()
+                        )
                     except Exception as e:
                         print(f"Error burocrático al repeler el raid: {e}")
                     return
-                await publicar_escrache(
-                    message.guild,
-                    "🚨 DEFENSA TERRITORIAL: CENSURA APLICADA",
-                    f"Se eliminó un mensaje de {message.author.mention} por violar la ley de orden público (Spam o Muro de texto excesivo).",
-                    discord.Color.dark_red()
-)
 
     if message.reference is not None:
         try:
@@ -732,7 +721,7 @@ async def advertir(interaction: discord.Interaction, usuario: discord.Member, mo
         mensaje_admin = f"⚠️ ¡ATENCIÓN! {usuario.name} alcanzó las {nuevas_faltas} faltas. Requiere acción drástica."
 
     await interaction.response.send_message(mensaje_admin, ephemeral=True)
-    await publicar_escrache(interaction, usuario, tipo_sancion, motivo)
+   await publicar_escrache(
     interaction.guild,
     "⚠️ ACTA DE ADVERTENCIA",
     f"El ciudadano {usuario.mention} sumó un strike a su prontuario.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
@@ -745,10 +734,10 @@ async def expulsar(interaction: discord.Interaction, usuario: discord.Member, mo
         return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** No podés procesar a una oficial en funciones del Ministerio. El Estado es intocable.", ephemeral=True)
     await usuario.kick(reason=motivo)
     await interaction.response.send_message(f"✅ {usuario.name} fue deportado exitosamente.", ephemeral=True)
-    await publicar_escrache(interaction, usuario, "DEPORTACIÓN (KICK)", motivo)
+   await publicar_escrache(
     interaction.guild,
     "🔨 EXILIO DECRETADO",
-    f"El individuo {usuario.mention} fue erradicado del servidor.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}. No lo veremos en un buen tiempo",
+    f"El individuo {usuario.mention} fue erradicado del servidor.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
     discord.Color.red()
 )
     
@@ -776,15 +765,17 @@ async def banear(interaction: discord.Interaction, usuario: discord.Member, moti
 async def aislar(interaction: discord.Interaction, usuario: discord.Member, minutos: int, motivo: str):
     if usuario.id == bot.user.id:
         return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** No podés procesar a una oficial en funciones del Ministerio. El Estado es intocable.", ephemeral=True)
+    
     tiempo = discord.utils.utcnow() + datetime.timedelta(minutos=minutos)
     await usuario.timeout(tiempo, reason=motivo)
     await interaction.response.send_message(f"✅ {usuario.name} fue aislado por {minutos} minutos.", ephemeral=True)
-    await publicar_escrache(interaction, usuario, f"AISLAMIENTO ({minutos} MINUTOS)", motivo)
-    interaction.guild,
-    "🔇 INCOMUNICACIÓN DICTADA",
-    f"Se ha revocado temporalmente el derecho a la palabra de {usuario.mention}.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
-    discord.Color.orange()
-)
+    
+    await publicar_escrache(
+        interaction.guild,
+        "🔇 INCOMUNICACIÓN DICTADA",
+        f"Se ha revocado temporalmente el derecho a la palabra de {usuario.mention}.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
+        discord.Color.orange()
+    )
         
 @bot.tree.command(name="indulto", description="Limpia los antecedentes penales de un ciudadano.")
 async def indulto(interaction: discord.Interaction, ciudadano: discord.User):
