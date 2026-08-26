@@ -709,32 +709,54 @@ async def reportar(interaction: discord.Interaction, sospechoso: discord.Member,
         
 import datetime 
 
-@bot.tree.command(name="advertir", description="Labra un acta de infracción a un ciudadano (Sistema de 3 strikes).")
-async def advertir(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
+@bot.tree.command(name="advertir", description="Labra un acta según el canal de Condenas (Sistema de 5 strikes).")
+async def advertir(interaction: discord.Interaction, usuario: discord.Member, motivo: str, cantidad: int = 1):
     if usuario.id == bot.user.id:
-        return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** No podés procesar a una oficial en funciones del Ministerio. El Estado es intocable.", ephemeral=True)
+        return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** El Estado es intocable.", ephemeral=True)
+    
     ref_faltas = db.reference(f'/servidores/{interaction.guild.id}/usuarios/{usuario.id}/advertencias')
     faltas_actuales = ref_faltas.get()
-    
     if faltas_actuales is None:
         faltas_actuales = 0
         
-    nuevas_faltas = faltas_actuales + 1
+    nuevas_faltas = faltas_actuales + cantidad
     ref_faltas.set(nuevas_faltas)
     
-    if nuevas_faltas < 3:
-        tipo_sancion = f"ADVERTENCIA FORMAL ({nuevas_faltas}/3)"
-        mensaje_admin = f"✅ Acta labrada. {usuario.name} tiene {nuevas_faltas}/3 faltas."
-    else:
-        tipo_sancion = f"🚨 ADVERTENCIA CRÍTICA ({nuevas_faltas}/3) - LÍMITE ALCANZADO"
-        mensaje_admin = f"⚠️ ¡ATENCIÓN! {usuario.name} alcanzó las {nuevas_faltas} faltas. Requiere acción drástica."
+    accion_tomada = ""
+    color_alerta = discord.Color.yellow()
     
-    await interaction.response.send_message(mensaje_admin, ephemeral=True)
+    try:
+        if nuevas_faltas == 1:
+            accion_tomada = "Llamado de atención."
+        elif nuevas_faltas == 2:
+            tiempo = discord.utils.utcnow() + datetime.timedelta(minutes=30)
+            await usuario.timeout(tiempo, reason=motivo)
+            accion_tomada = "Aislamiento (30 min)."
+            color_alerta = discord.Color.orange()
+        elif nuevas_faltas == 3:
+            tiempo = discord.utils.utcnow() + datetime.timedelta(hours=1)
+            await usuario.timeout(tiempo, reason=motivo)
+            accion_tomada = "Aislamiento (1 hora)."
+            color_alerta = discord.Color.orange()
+        elif nuevas_faltas == 4:
+            tiempo = discord.utils.utcnow() + datetime.timedelta(hours=5)
+            await usuario.timeout(tiempo, reason=motivo)
+            accion_tomada = "Aislamiento (5 horas)."
+            color_alerta = discord.Color.red()
+        elif nuevas_faltas >= 5:
+            await usuario.ban(reason=f"Acumulación de 5+ warns. Último motivo: {motivo}")
+            accion_tomada = "Exilio definitivo (Ban)."
+            color_alerta = discord.Color.dark_red()
+    except discord.Forbidden:
+        accion_tomada += " *(Error: El bot necesita un rol más alto para aislar/banear a este usuario)*"
+
+    await interaction.response.send_message(f"✅ Acta labrada. {usuario.name} sumó {cantidad} falta(s) -> Total: {nuevas_faltas}/5. Medida: {accion_tomada}", ephemeral=True)
+    
     await publicar_escrache(
         interaction.guild,
-        tipo_sancion, 
-        f"El ciudadano {usuario.mention} sumó un strike a su prontuario.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
-        discord.Color.yellow()
+        f"⚖️ ACTA DE INFRACCIÓN ({nuevas_faltas}/5)",
+        f"El ciudadano {usuario.mention} sumó **{cantidad} strike(s)** a su legajo.\n**Motivo:** {motivo}\n**Condena Automática:** {accion_tomada}\n**Oficial a Cargo:** {interaction.user.mention}",
+        color_alerta
     )
     
 @bot.tree.command(name="expulsar", description="Deporta a un ciudadano del servidor.")
@@ -786,21 +808,25 @@ async def aislar(interaction: discord.Interaction, usuario: discord.Member, minu
         discord.Color.orange()
     )
         
-@bot.tree.command(name="indulto", description="Limpia los antecedentes penales de un ciudadano.")
-async def indulto(interaction: discord.Interaction, ciudadano: discord.User):
-    if not interaction.user.guild_permissions.ban_members:
-        await interaction.response.send_message("❌ Solo el Poder Ejecutivo puede otorgar indultos.", ephemeral=True)
-        return
+@@bot.tree.command(name="indultar", description="Concede un indulto, restando un strike al legajo de un ciudadano.")
+async def indultar(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
+    ref_faltas = db.reference(f'/servidores/{interaction.guild.id}/usuarios/{usuario.id}/advertencias')
+    faltas_actuales = ref_faltas.get()
 
-    ciudadano_id = str(ciudadano.id)
-    ref = db.reference(f'/servidores/{interaction.guild_id}/legajos_penales/{ciudadano_id}')
-    
-    if ref.get() is None:
-        await interaction.response.send_message(f"📝 El ciudadano {ciudadano.mention} tiene el legajo limpio. Nada que perdonar.", ephemeral=True)
-    else:
-        ref.delete()
-        await interaction.response.send_message(f"🕊️ **INDULTO OTORGADO:** Los antecedentes de {ciudadano.mention} fueron borrados. Vuelve a fojas cero.")
+    if faltas_actuales is None or faltas_actuales <= 0:
+        return await interaction.response.send_message(f"❌ **Sobreseimiento innecesario:** El ciudadano {usuario.name} tiene un legajo limpio (0 faltas).", ephemeral=True)
 
+    nuevas_faltas = faltas_actuales - 1
+    ref_faltas.set(nuevas_faltas)
+
+    await interaction.response.send_message(f"✅ Indulto concedido. {usuario.name} bajó a {nuevas_faltas}/3 faltas.", ephemeral=True)
+
+    await publicar_escrache(
+        interaction.guild,
+        "🕊️ INDULTO OTORGADO",
+        f"El Ministerio ha mostrado piedad. Se restó un strike al prontuario de {usuario.mention}.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}\n**Faltas actuales:** {nuevas_faltas}/3",
+        discord.Color.green()
+    )
 async def publicar_escrache(interaction: discord.Interaction, usuario: discord.Member, tipo_sancion: str, motivo: str):
     try:
         canal_id = db.reference(f'/servidores/{interaction.guild.id}/canal_alertas').get()
