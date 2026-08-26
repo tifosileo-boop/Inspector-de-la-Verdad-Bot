@@ -43,6 +43,14 @@ intents.members = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+async def publicar_escrache(guild, titulo, descripcion, color):
+    canal_id = db.reference(f'/servidores/{guild.id}/canal_alertas').get()
+    if canal_id:
+        canal = guild.get_channel(canal_id)
+        if canal:
+            embed = discord.Embed(title=titulo, description=descripcion, color=color)
+            await canal.send(embed=embed)
+
 @bot.tree.command(name="configurar", description="Fija los canales oficiales del Ministerio para este servidor.")
 async def configurar(interaction: discord.Interaction, canal_reportes: discord.TextChannel, canal_alertas: discord.TextChannel):
     if not interaction.user.guild_permissions.administrator:
@@ -719,6 +727,11 @@ async def advertir(interaction: discord.Interaction, usuario: discord.Member, mo
 
     await interaction.response.send_message(mensaje_admin, ephemeral=True)
     await publicar_escrache(interaction, usuario, tipo_sancion, motivo)
+    interaction.guild,
+    "⚠️ ACTA DE ADVERTENCIA",
+    f"El ciudadano {usuario.mention} sumó un strike a su prontuario.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
+    discord.Color.yellow()
+)
 
 @bot.tree.command(name="expulsar", description="Deporta a un ciudadano del servidor.")
 async def expulsar(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
@@ -727,6 +740,11 @@ async def expulsar(interaction: discord.Interaction, usuario: discord.Member, mo
     await usuario.kick(reason=motivo)
     await interaction.response.send_message(f"✅ {usuario.name} fue deportado exitosamente.", ephemeral=True)
     await publicar_escrache(interaction, usuario, "DEPORTACIÓN (KICK)", motivo)
+    interaction.guild,
+    "🔨 EXILIO DECRETADO",
+    f"El individuo {usuario.mention} fue erradicado del servidor.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}. No lo veremos en un buen tiempo",
+    discord.Color.red()
+)
     
 @bot.tree.command(name="banear", description="Exilia a un ciudadano del servidor de forma permanente.")
 async def banear(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
@@ -756,6 +774,11 @@ async def aislar(interaction: discord.Interaction, usuario: discord.Member, minu
     await usuario.timeout(tiempo, reason=motivo)
     await interaction.response.send_message(f"✅ {usuario.name} fue aislado por {minutos} minutos.", ephemeral=True)
     await publicar_escrache(interaction, usuario, f"AISLAMIENTO ({minutos} MINUTOS)", motivo)
+    interaction.guild,
+    "🔇 INCOMUNICACIÓN DICTADA",
+    f"Se ha revocado temporalmente el derecho a la palabra de {usuario.mention}.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
+    discord.Color.orange()
+)
         
 @bot.tree.command(name="indulto", description="Limpia los antecedentes penales de un ciudadano.")
 async def indulto(interaction: discord.Interaction, ciudadano: discord.User):
