@@ -719,15 +719,16 @@ async def advertir(interaction: discord.Interaction, usuario: discord.Member, mo
     else:
         tipo_sancion = f"🚨 ADVERTENCIA CRÍTICA ({nuevas_faltas}/3) - LÍMITE ALCANZADO"
         mensaje_admin = f"⚠️ ¡ATENCIÓN! {usuario.name} alcanzó las {nuevas_faltas} faltas. Requiere acción drástica."
-
+    
     await interaction.response.send_message(mensaje_admin, ephemeral=True)
+    
     await publicar_escrache(
-    interaction.guild,
-    "⚠️ ACTA DE ADVERTENCIA",
-    f"El ciudadano {usuario.mention} sumó un strike a su prontuario.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
-    discord.Color.yellow()
-)
-
+        interaction.guild,
+        tipo_sancion, 
+        f"El ciudadano {usuario.mention} sumó un strike a su prontuario.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
+        discord.Color.yellow()
+    )
+    
 @bot.tree.command(name="expulsar", description="Deporta a un ciudadano del servidor.")
 async def expulsar(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
     if usuario.id == bot.user.id:
