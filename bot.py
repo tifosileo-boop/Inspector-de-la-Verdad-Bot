@@ -151,6 +151,12 @@ async def on_message(message):
                     except Exception as e:
                         print(f"Error burocrático al repeler el raid: {e}")
                     return
+                await publicar_escrache(
+                    message.guild,
+                    "🚨 DEFENSA TERRITORIAL: CENSURA APLICADA",
+                    f"Se eliminó un mensaje de {message.author.mention} por violar la ley de orden público (Spam o Muro de texto excesivo).",
+                    discord.Color.dark_red()
+)
 
     if message.reference is not None:
         try:
