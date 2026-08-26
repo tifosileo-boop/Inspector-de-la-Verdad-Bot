@@ -734,7 +734,7 @@ async def expulsar(interaction: discord.Interaction, usuario: discord.Member, mo
         return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** No podés procesar a una oficial en funciones del Ministerio. El Estado es intocable.", ephemeral=True)
     await usuario.kick(reason=motivo)
     await interaction.response.send_message(f"✅ {usuario.name} fue deportado exitosamente.", ephemeral=True)
-   await publicar_escrache(
+    await publicar_escrache(
     interaction.guild,
     "🔨 EXILIO DECRETADO",
     f"El individuo {usuario.mention} fue erradicado del servidor.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
