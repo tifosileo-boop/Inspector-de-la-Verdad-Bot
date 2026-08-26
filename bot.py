@@ -45,11 +45,20 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 async def publicar_escrache(guild, titulo, descripcion, color):
     canal_id = db.reference(f'/servidores/{guild.id}/canal_alertas').get()
+    
     if canal_id:
-        canal = guild.get_channel(canal_id)
-        if canal:
-            embed = discord.Embed(title=titulo, description=descripcion, color=color)
-            await canal.send(embed=embed)
+        try:
+            canal = guild.get_channel(int(canal_id)) 
+            
+            if canal:
+                embed = discord.Embed(title=titulo, description=descripcion, color=color)
+                await canal.send(embed=embed)
+            else:
+                print(f"⚠️ El bot no encuentra el canal {canal_id}. ¿Lo borraste o no tiene permisos?")
+        except Exception as e:
+            print(f"⚠️ Error al procesar el canal de alertas: {e}")
+    else:
+        print(f"⚠️ El servidor {guild.name} NO tiene un canal_alertas configurado en la base de datos.")
 
 @bot.tree.command(name="configurar", description="Fija los canales oficiales del Ministerio para este servidor.")
 async def configurar(interaction: discord.Interaction, canal_reportes: discord.TextChannel, canal_alertas: discord.TextChannel):
