@@ -808,7 +808,7 @@ async def aislar(interaction: discord.Interaction, usuario: discord.Member, minu
         discord.Color.orange()
     )
         
-@@bot.tree.command(name="indultar", description="Concede un indulto, restando un strike al legajo de un ciudadano.")
+@bot.tree.command(name="indultar", description="Concede un indulto, restando un strike al legajo de un ciudadano.")
 async def indultar(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
     ref_faltas = db.reference(f'/servidores/{interaction.guild.id}/usuarios/{usuario.id}/advertencias')
     faltas_actuales = ref_faltas.get()
