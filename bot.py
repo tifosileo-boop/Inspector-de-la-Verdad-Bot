@@ -44,15 +44,20 @@ intents.members = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 async def publicar_escrache(guild, titulo, descripcion, color):
-    canal_id = 1540161577863614594
+    canal_id = db.reference(f'/servidores/{guild.id}/canal_alertas').get()
     
-    canal = guild.get_channel(canal_id)
-    if canal:
+    if canal_id:
         try:
-            embed = discord.Embed(title=titulo, description=descripcion, color=color)
-            await canal.send(embed=embed)
+            canal = guild.get_channel(int(canal_id)) or await guild.fetch_channel(int(canal_id))
+            if canal:
+                embed = discord.Embed(title=titulo, description=descripcion, color=color)
+                await canal.send(embed=embed)
+            else:
+                print(f"❌ La Inspectora no encuentra el canal con ID {canal_id}. ¿Lo borraron?")
         except discord.Forbidden:
-            print("❌ El bot no tiene permiso para escribir en #penitencia.")
+            print("❌ El bot no tiene permisos de 'Ver Canal' o 'Insertar Enlaces' en #penitencia.")
+        except Exception as e:
+            print(f"❌ Error burocrático al colgar el acta: {e}")
 
 @bot.tree.command(name="configurar", description="Fija los canales oficiales del Ministerio para este servidor.")
 async def configurar(interaction: discord.Interaction, canal_reportes: discord.TextChannel, canal_alertas: discord.TextChannel):
@@ -774,18 +779,17 @@ async def banear(interaction: discord.Interaction, usuario: discord.Member, moti
         await usuario.ban(reason=motivo)
         await interaction.response.send_message(f"✅ Se ejecutó el exilio definitivo de {usuario.name}.", ephemeral=True)
         
-        canal_id = db.reference(f'/servidores/{interaction.guild.id}/canal_alertas').get()
-        
-        if not canal_id:
-            await interaction.followup.send("⚠️ **Atención:** El ban se ejecutó, pero no tenés configurado el ID del `canal_alertas` en Firebase. El escrache público no se pudo publicar.", ephemeral=True)
-        else:
-            await publicar_escrache(interaction, usuario, "EXILIO DEFINITIVO (BAN)", motivo)
-    
+        await publicar_escrache(
+            interaction.guild,
+            "🔨 EXILIO DEFINITIVO (BAN)",
+            f"El individuo {usuario.mention} fue erradicado de forma permanente.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
+            discord.Color.dark_red()
+        )
     except discord.Forbidden:
         await interaction.response.send_message(f"❌ **Incompetencia de jurisdicción:** El Ministerio no tiene permisos para banear a {usuario.name} (tiene un rol superior al mío o es el dueño).", ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(f"❌ **Error en el procedimiento penal:** {e}", ephemeral=True)
-    
+
 @bot.tree.command(name="aislar", description="Incomunica a un ciudadano por un tiempo determinado.")
 async def aislar(interaction: discord.Interaction, usuario: discord.Member, minutos: int, motivo: str):
     if usuario.id == bot.user.id:
@@ -821,27 +825,6 @@ async def indultar(interaction: discord.Interaction, usuario: discord.Member, mo
         f"El Ministerio ha mostrado piedad. Se restó un strike al prontuario de {usuario.mention}.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}\n**Faltas actuales:** {nuevas_faltas}/3",
         discord.Color.green()
     )
-async def publicar_escrache(interaction: discord.Interaction, usuario: discord.Member, tipo_sancion: str, motivo: str):
-    try:
-        canal_id = db.reference(f'/servidores/{interaction.guild.id}/canal_alertas').get()
-        if canal_id:
-            canal_escrache = interaction.client.get_channel(1540161577863614594)
-            if canal_escrache:
-                embed_penal = discord.Embed(
-                    title="🚨 REGISTRO PENAL DEL MINISTERIO 🚨",
-                    description=f"El ciudadano {usuario.mention} ha sido procesado por las fuerzas de seguridad.",
-                    color=discord.Color.red()
-                )
-                foto_perfil = usuario.avatar.url if usuario.avatar else usuario.default_avatar.url
-                embed_penal.set_thumbnail(url=foto_perfil)
-                embed_penal.add_field(name="⚖️ Sanción Aplicada", value=tipo_sancion, inline=False) 
-                embed_penal.add_field(name="📜 Motivo del Fallo", value=motivo, inline=False)
-                embed_penal.add_field(name="👮 Oficial a Cargo", value=interaction.user.mention, inline=True)
-                embed_penal.set_footer(text="El Ministerio no perdona ni olvida. Gloria al servidor.")
-                
-                await canal_escrache.send(embed=embed_penal)
-    except Exception as e:
-        print(f"Error procesal al enviar el expediente público: {e}")
 
 @bot.event
 async def on_ready():
