@@ -471,8 +471,11 @@ async def rutina_diaria():
         if hora_arg.hour == 0 and hora_arg.minute == 0:
             await canal_general.send("¡Oíd, mortales!, el grito sagrado... ¡Libertad!, ¡libertad!, ¡libertad!. Oíd el ruido de rotas cadenas, ved el trono a la noble igualdad...")
 
-        elif hora_arg.hour == 9 and hora_arg.minute == 25:
+        if hora_arg.hour == 9 and hora_arg.minute == 25:
             await canal_general.send("¡O juremos con gloria a morir!")
+            
+    except Exception as e:
+        print(f"🚨 Falla en la rutina del himno: {e}", flush=True)
             
     except Exception as e:
         print(f"🚨 Falla en la rutina del himno: {e}", flush=True)
