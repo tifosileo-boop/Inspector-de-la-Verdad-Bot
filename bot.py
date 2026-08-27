@@ -471,30 +471,11 @@ async def rutina_diaria():
         if hora_arg.hour == 0 and hora_arg.minute == 0:
             await canal_general.send("¡Oíd, mortales!, el grito sagrado... ¡Libertad!, ¡libertad!, ¡libertad!. Oíd el ruido de rotas cadenas, ved el trono a la noble igualdad...")
 
-        if hora_arg.hour == 9 and hora_arg.minute == 25:
+        if hora_arg.hour == 9 and hora_arg.minute == 0:
             await canal_general.send("¡O juremos con gloria a morir!")
             
     except Exception as e:
         print(f"🚨 Falla en la rutina del himno: {e}", flush=True)
-            
-    except Exception as e:
-        print(f"🚨 Falla en la rutina del himno: {e}", flush=True)
-
-        elif hora_arg.hour == 9 and hora_arg.minute == 25:
-            servidores = db.reference('/servidores').get()
-            if servidores:
-                for server_id, data in servidores.items():
-                    canal_id = data.get("canal_alertas")
-                    if canal_id:
-                        try:
-                            canal = bot.get_channel(int(canal_id)) or await bot.fetch_channel(int(canal_id))
-                            if canal: 
-                                await canal.send("¡O juremos con gloria a morir!")
-                        except Exception as e:
-                            print(f"⚠️ Error {server_id}: {e}", flush=True)
-                            
-    except Exception as e:
-        print(f"🚨 Falla en la rutina: {e}", flush=True)
 
 acciones_seguridad = {}
 
