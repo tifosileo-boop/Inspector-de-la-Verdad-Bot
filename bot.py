@@ -416,7 +416,6 @@ async def info(interaction: discord.Interaction):
         color=discord.Color.dark_theme()
     )
     
-    # --- SISTEMAS PÚBLICOS Y PASIVOS ---
     embed.add_field(
         name="🤖 Interacción e IA",
         value="Mencioname en el chat con el comando /consultar para debatir con memoria procesal y doctrina cosmopolita. Además, el Estado cuenta con un sistema de **respuestas automáticas** para agilizar trámites frecuentes y mantener el orden del chat. Si el chat es activo, podrás ver como patrullo cada cierto tiempo mandando mensajes a la comunidad en el chat general",
@@ -464,18 +463,19 @@ async def rutina_diaria():
         ahora_utc = datetime.datetime.now(datetime.timezone.utc)
         hora_arg = ahora_utc - datetime.timedelta(hours=3)
 
+        canal_general = bot.get_channel(1394371063865147424)
+        
+        if not canal_general:
+            return
+
         if hora_arg.hour == 0 and hora_arg.minute == 0:
-            servidores = db.reference('/servidores').get()
-            if servidores:
-                for server_id, data in servidores.items():
-                    canal_id = data.get("canal_alertas")
-                    if canal_id:
-                        try:
-                            canal = bot.get_channel(int(canal_id)) or await bot.fetch_channel(int(canal_id))
-                            if canal: 
-                                await canal.send("¡Oíd, mortales!, el grito sagrado... ¡Libertad!, ¡libertad!, ¡libertad!. Oíd el ruido de rotas cadenas, ved el trono a la noble igualdad...")
-                        except Exception as e:
-                            print(f"⚠️ Error {server_id}: {e}", flush=True)
+            await canal_general.send("¡Oíd, mortales!, el grito sagrado... ¡Libertad!, ¡libertad!, ¡libertad!. Oíd el ruido de rotas cadenas, ved el trono a la noble igualdad...")
+
+        elif hora_arg.hour == 9 and hora_arg.minute == 25:
+            await canal_general.send("¡O juremos con gloria a morir!")
+            
+    except Exception as e:
+        print(f"🚨 Falla en la rutina del himno: {e}", flush=True)
 
         elif hora_arg.hour == 9 and hora_arg.minute == 25:
             servidores = db.reference('/servidores').get()
