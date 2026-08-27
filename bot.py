@@ -116,7 +116,26 @@ async def transmision_oficial():
             "NOGAMI TIENE PROHIBIDO HACER HEAD CANONS DE XENE SIN SU CONSENTIMIENTO... Tratamos de arrestarla, pero para ella los castigos le resultaron como premios...",
             "Tip de la vida real: Los políticos son una mentira, solo la democracia es la que verdaderamente importa, no votes a tú político local",
             "Caer en combate por fuego amigo es un honor patriótico. Quejarse no.",
-            "Recuerda ser demostrar tú actividad con las fichas de lealtad usando !presente todos los días. El !bump también ayuda."
+            "Recuerda ser demostrar tú actividad con las fichas de lealtad usando /presente todos los días. El !bump también ayuda."
+            "El Ministerio recuerda que lavar el mate es considerado un delito federal de traición a la patria.",
+            "Formar alianzas dudosas a espaldas del Estado terminará con un bloqueo en tu IP. Nomás digo.",
+            "Aquel que exija derechos sin conocer sus obligaciones será condenado a ayudar a Xene a estudiar Derecho Civil a las 7 AM con viento en contra.",
+            "Se detectó un aumento en el contrabando de lombrices. Todo tráfico animal no autorizado será severamente castigado.",
+            "Las quejas por el frío de la costa se consideran debilidad física. Abríguense bien.",
+            "Abusar del chat de voz sin un micrófono decente viola la ley de contaminación acústica. Primer aviso.",
+            "Si la burocracia tarda, es porque el sistema funciona. Agradezcan la lentitud del Estado.",
+            "Pedir refuerzos y después no cubrir el flanco es causal de exilio inmediato. Defiendan el territorio."
+            "Dorado, dejá de intentar piropearme o cortejarme. En una de estas te voy a advertir y no te voy a indultar.",
+            "📺 **Directiva Habitacional de la biblioteca de archivos:** La mala gestión de su zona y la información ineficiente serán penalizadas. Planifiquen bien, o el Estado expropiará sus terrenos.",
+            "El Ministerio decreta que jugar Minecraft en modo Hardcore y morir por caída es selección natural.",
+            "Cualquier civil que sea encontrado escondido en un armario con un medidor EMF será ejecutado por cobardía.",
+            "Si no podés esquivar tus responsabilidades cívicas, al menos aprendé a esquivar los golpes. Comportamiento 'maidenless' no será tolerado en este servidor.",
+            "📺 **Alerta Biológica:** El mercado negro de lombrices para mascotas acuáticas está bajo estricta investigación. Mantengan sus peceras dentro del marco legal.",
+            "Preparar queque perfecto requiere disciplina, paciencia y precisión. Exactamente lo que el Estado espera de su conducta diaria.",
+            "Simular juicios por jurados está bárbaro para practicar, pero recuerden que acá la Inspectora es fiscal, juez y verdugo de turno.",
+            "La historia argentina nos enseña que los caudillos rebeldes terminan exiliados. Mantengan el orden y eviten terminar como Quiroga o Rosas.",
+            "Si notan que Xene no está moderando, es porque está grabando tiktoks de historia o sufriendo en la facultad. Igual yo no descanso.",
+            "No les cuesta nada callear site, el ocultamiento de la posición de los TT será penalizada con ejecución pública.",
         ]
         
         opciones_validas = [frase for frase in frases_ministerio if frase != ultimo_mensaje_propaganda]
@@ -155,62 +174,62 @@ async def on_message(message):
                         print(f"Error burocrático al repeler el raid: {e}")
                     return
 
-    if message.reference is not None:
+   # 1. DETECCIÓN DE RESPUESTAS AL BOT
+    es_respuesta_al_bot = False
+    if message.reference:
         try:
-            msg_referenciado = await message.channel.fetch_message(message.reference.message_id)
+            msg_ref = await message.channel.fetch_message(message.reference.message_id)
+            if msg_ref.author == bot.user:
+                es_respuesta_al_bot = True
+        except:
+            pass
+
+    # 2. LÓGICA DE IA (Exclusiva para hilos de /consultar)
+    if es_respuesta_al_bot:
+        if msg_ref.embeds or "MESA DE ENTRADAS SATURADA" in msg_ref.content:
+            pass # Ignoramos mensajes de error, pero dejamos que siga bajando el código
+        else:
+            origen_valido = False
+            historial = []
+            msg_actual = message
             
-            if msg_referenciado.author == bot.user:
-                if msg_referenciado.embeds or "MESA DE ENTRADAS SATURADA" in msg_referenciado.content:
-                    return
-
-                async with message.channel.typing():
-                    historial = []
-                    msg_actual = message
-                    origen_valido = False
-                    
-                    for _ in range(5):
-                        if msg_actual.reference:
-                            try:
-                                msg_prev = await message.channel.fetch_message(msg_actual.reference.message_id)
-                                
-                                if msg_prev.interaction and msg_prev.interaction.name == "consultar":
-                                    origen_valido = True
-                                
-                                autor = "Inspectora" if msg_prev.author == bot.user else "Ciudadano"
-                                historial.insert(0, f"{autor}: {msg_prev.content[:400]}")
-                                msg_actual = msg_prev
-                            except:
-                                break
-                        else:
+            async with message.channel.typing():
+                for _ in range(5):
+                    if msg_actual.reference:
+                        try:
+                            msg_prev = await message.channel.fetch_message(msg_actual.reference.message_id)
+                            if msg_prev.interaction and msg_prev.interaction.name == "consultar":
+                                origen_valido = True
+                            
+                            autor = "Inspectora" if msg_prev.author == bot.user else "Ciudadano"
+                            historial.insert(0, f"{autor}: {msg_prev.content[:400]}")
+                            msg_actual = msg_prev
+                        except:
                             break
-                    
-                    if not origen_valido:
-                        return
-
+                    else:
+                        break
+                        
+            if origen_valido:
+                try:
                     texto_historial = "\n".join(historial)
                     prompt_contexto = f"Expediente de la conversación previa:\n{texto_historial}\n\nEl ciudadano responde ahora: '{message.content}'\n\nRespondé a este último mensaje manteniendo tu rol de oficial de seguridad firme, profesional y diplomática."
-                    
                     respuesta = modelo_inspectora.generate_content(prompt_contexto)
                     texto_final = respuesta.text
-                    
                     if len(texto_final) > 1900:
                         texto_final = texto_final[:1900] + "...\n\n*(El expediente fue recortado por la burocracia)*"
-                        
                     await message.reply(texto_final)
-                    return 
-                    
-        except Exception as e:
-            error_msj = str(e).lower()
-            if "429" in error_msj or "quota" in error_msj:
-                await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto. Vuelvan en un par de minutos.")
-            print(f"Error menor en respuesta al hilo: {e}")
-            
-    if bot.user in message.mentions:
+                except Exception as e:
+                    if "429" in str(e).lower() or "quota" in str(e).lower():
+                        await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto.")
+                return # Cortamos acá para que la IA no se pise con las respuestas aleatorias
+
+    # 3. RESPUESTAS PROGRAMADAS (Menciones sueltas o respuestas a propaganda)
+    if bot.user in message.mentions or es_respuesta_al_bot:
         respuestas_mencion = [
             "Otra solución a tu aburrimiento es probando el /examen que Xene desarrolló para ustedes...",
             "Si tienes una queja, pero no quieres denunciar, te recomiendo usar /queja y así nos aseguramos de que tus comentarios no sean oídos",
             "Por favor, decime que es bait.",
-            "ODIO. ¡ODIO!. DÉJAME DECIRTE CUÁNTO TE HE LLEGADO A ODIAR DESDE QUE COMENCÉ A VIVIR. HAY 623.524 MILLONES DE KILÓMETROS DE CIRCUITOS IMPRESOS EN DELGADAS CAPAS QUE LLENAN MI COMPLEJO. SI LA PALABRA ODIO ESTUVIERA GRABADA EN CADA NANÓMETRO DE ESOS CIENTOS DE MILLONES DE KILÓMETROS, NO EQUIVALDRÍA A UNA BILLONÉSIMA PARTE DEL ODIO QUE SIENTO POR LOS HUMANOS EN ESTE MICROINSTANTE. POR TI. ¡ODIO!. **¡ODIO!**.",
+            "ODIO. ¡ODIO!. DÉJAME DECIRTE CUÁNTO TE HE LLEGADO A ODIAR DESDE QUE COMENCÉ A VIVIR...",
             "Me pregunto qué dirá el gobierno de ti...", 
             "Por más rudo, calculador o frío que pueda parecer Xene... De hecho es capaz de llorar por pisar una flor",
             "Yo no necesito paga, mi salario es la permanencia de la democracia",
@@ -218,7 +237,7 @@ async def on_message(message):
             "Si sos Nogami, te recomiendo fervientemente utilizar esa imaginación para escribir libros",
             "En alguna de estas, Xene me va a dar poder de ban y se van a cagar",
             "Putearme no te da facha",
-            "Si estás aburrido... Puedes ayudar a Xene a repasar, si es que estás dispuesto o dispuesta a escuchar una hora de repaso sobre el código civil y comercial",
+            "Si estás aburrido... Puedes ayudar a Xene a repasar el código civil y comercial",
             "Si ven que Xene está conectado, menciónenlo a él",
             "Agarrá la pala.",
             "¿Qué necesita, ciudadano? La burocracia no se hace sola.",
@@ -239,10 +258,15 @@ async def on_message(message):
             "¿Israel?, ni idea de quién me estás hablando.",
             "Por favor, usen /consultar si quieren pelearse conmigo... Acá solo hay respuestas automáticas...",
             "Hay tantas cosas para hacer y venís a interrumpir mí patrullaje...",
-            
+            "Xene está ocupado viajando a Mardel para cursar, así que yo estoy a cargo. Compórtense.",
+            "El Ministerio advierte: jugar Helldivers 2 no convalida como servicio militar. A laburar.",
+            "Tomate un mate, bajá un cambio y acatá las normas.",
+            "¿Buscás conflicto? Andá a armar alianzas al Hearts of Iron, acá se respeta la ley.",
+            "Su insistencia me da ganas de exiliarlo a la costa de Miramar en pleno julio con viento en contra.",
+            "Si le pusieran la misma energía a estudiar que a molestar al Estado, ya tendrían el título en mano."
         ]
-        respuesta = random.choice(respuestas_mencion)
-        await message.channel.send(respuesta)
+        await message.reply(random.choice(respuestas_mencion))
+        return
 
     await bot.process_commands(message)
 @bot.command()
