@@ -589,6 +589,7 @@ async def on_member_join(member):
         except discord.Forbidden:
             print("❌ La Inspectora necesita que su rol esté POR ENCIMA del rol Ciudadano para poder asignarlo.")
         except Exception as e:
+            print(f"Error al otorgar pasaporte: {e}")
 
     if guild_id not in registro_migratorio:
         registro_migratorio[guild_id] = []
