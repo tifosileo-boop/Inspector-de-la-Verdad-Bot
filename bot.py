@@ -579,6 +579,16 @@ async def on_member_join(member):
         except:
             pass
         return
+    if not member.bot:
+        try:
+            rol_ciudadano = member.guild.get_role(1497107604911161415) 
+            if rol_ciudadano:
+                await member.add_roles(rol_ciudadano, reason="Ciudadanía automática otorgada al ingresar.")
+            else:
+                print("⚠️ Error burocrático: No encontré el ID del rol Ciudadano.")
+        except discord.Forbidden:
+            print("❌ La Inspectora necesita que su rol esté POR ENCIMA del rol Ciudadano para poder asignarlo.")
+        except Exception as e:
 
     if guild_id not in registro_migratorio:
         registro_migratorio[guild_id] = []
