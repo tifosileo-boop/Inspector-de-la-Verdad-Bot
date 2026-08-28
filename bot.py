@@ -174,7 +174,6 @@ async def on_message(message):
                         print(f"Error burocrático al repeler el raid: {e}")
                     return
 
-   # 1. DETECCIÓN DE RESPUESTAS AL BOT
     es_respuesta_al_bot = False
     if message.reference:
         try:
@@ -184,10 +183,9 @@ async def on_message(message):
         except:
             pass
 
-    # 2. LÓGICA DE IA (Exclusiva para hilos de /consultar)
     if es_respuesta_al_bot:
         if msg_ref.embeds or "MESA DE ENTRADAS SATURADA" in msg_ref.content:
-            pass # Ignoramos mensajes de error, pero dejamos que siga bajando el código
+            pass
         else:
             origen_valido = False
             historial = []
@@ -221,9 +219,7 @@ async def on_message(message):
                 except Exception as e:
                     if "429" in str(e).lower() or "quota" in str(e).lower():
                         await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto.")
-                return # Cortamos acá para que la IA no se pise con las respuestas aleatorias
-
-    # 3. RESPUESTAS PROGRAMADAS (Menciones sueltas o respuestas a propaganda)
+                return 
     if bot.user in message.mentions or es_respuesta_al_bot:
         respuestas_mencion = [
             "Otra solución a tu aburrimiento es probando el /examen que Xene desarrolló para ustedes...",
@@ -269,40 +265,71 @@ async def on_message(message):
         return
 
     await bot.process_commands(message)
-@bot.command()
-@commands.has_permissions(manage_messages=True) 
-async def clear(ctx, cantidad: int):
-    await ctx.channel.purge(limit=cantidad + 1)
-    mensaje = await ctx.send(f"🧹 El Ministerio de la Obediencia ha incinerado {cantidad} mensajes de disidencia.")
-fichadas_lealtad = {}
+from discord import app_commands
 
-@bot.command()
-async def queja(ctx, *, texto=None):
-    if texto is None:
-        await ctx.send("❌ **ERROR:** No podés quejarte del vacío. Escribí algo, che.")
-        return
+@bot.tree.command(name="clear", description="Incinera mensajes en el canal, que no quede nada de evidencia. (Solo oficiales del Ministerio)")
+@app_commands.default_permissions(manage_messages=True)
+async def clear(interaction: discord.Interaction, cantidad: int):
+    await interaction.response.defer(ephemeral=True)
+    try:
+        eliminados = await interaction.channel.purge(limit=cantidad)
         
+        embed_limpieza = discord.Embed(
+            title="🧹 INCINERACIÓN DE EXPEDIENTES",
+            description=f"El Ministerio ha purgado **{len(eliminados)}** mensajes de disidencia.",
+            color=discord.Color.dark_purple()
+        )
+        embed_limpieza.set_footer(text=f"Operación solicitada por: {interaction.user.display_name}")
+        
+        await interaction.followup.send(embed=embed_limpieza)
+        
+    except discord.Forbidden:
+        await interaction.followup.send("❌ **Error burocrático:** La Inspectora no tiene permiso para borrar mensajes acá.")
+    except Exception as e:
+        await interaction.followup.send(f"❌ **Falla en la incineradora:** {e}")
+
+@bot.tree.command(name="queja", description="Presentá un reclamo formal contra otro usuario ante el Ministerio. (Probablemente sea ignorado).")
+async def queja(interaction: discord.Interaction, reclamo: str):
     respuestas_burocraticas = [
         "Su queja ha sido recibida y enviada directamente a la trituradora de papel.",
         "Entendido. Se analizará su reclamo en los próximos 10 a 15 años.",
         "Su espiritu anarquista y caótico ha sido reportado, gracias por cooperar.",
-        "Su descontento ha sido registrado. Un oficial de lealtad lo visitará pronto para 'charlar'.",
+        "Su descontento ha sido registrado. Un senador lo visitará pronto para 'charlar'.",
         "Formulario 404: Empatía no encontrada. Intente de nuevo el año que viene.",
         "Su reclamo fue derivado al sector de 'Asuntos Inexistentes'.",
-        "Anotado en mi máquina de escribir invisible. Siga circulando."
+        "Anotado en mi máquina de escribir invisible. Siga circulando.",
+        "Perfecto, su aporte no servirá de nada.",
+        "Recibimos su queja y no haremos nada al respecto, tenga un buen dia.",
+        "No se pudo enviar su queja, intentelo nuevamente."
     ]
 
-    id_guardado = db.reference(f'/servidores/{ctx.guild.id}/canal_oficina').get()
+    id_guardado = db.reference(f'/servidores/{interaction.guild.id}/canal_oficina').get()
     
-    if id_guardado:
-        canal_mods = bot.get_channel(id_guardado)
-        if canal_mods:
-            await canal_mods.send(f"📩 **NUEVA QUEJA:**\n**Usuario:** {ctx.author.mention}\n**Asunto:** {texto}")
-            await ctx.send(f"📋 {random.choice(respuestas_burocraticas)}")
-            return
-            
-    await ctx.send("⚠️ La burocracia falló: Este servidor no tiene configurada una oficina de denuncias.")
+    if not id_guardado:
+        return await interaction.response.send_message("⚠️ **Error burocrático:** Este servidor no tiene configurada una oficina de denuncias. Usen `/set_oficina` primero.", ephemeral=True)
 
+    canal_mods = interaction.client.get_channel(id_guardado)
+    
+    if canal_mods:
+        embed_oficina = discord.Embed(
+            title="📠 NUEVO FORMULARIO DE QUEJA (F-404)",
+            description=f"**Demandante:** {interaction.user.mention}\n**Reclamo:** {reclamo}",
+            color=discord.Color.dark_grey()
+        )
+        embed_oficina.set_thumbnail(url=interaction.user.display_avatar.url)
+        embed_oficina.set_footer(text="Estado del trámite: Cajoneado con éxito.")
+        
+        await canal_mods.send(embed=embed_oficina)
+
+        embed_civil = discord.Embed(
+            title="📋 TRÁMITE INGRESADO",
+            description=random.choice(respuestas_burocraticas),
+            color=discord.Color.light_grey()
+        )
+        await interaction.response.send_message(embed=embed_civil, ephemeral=True)
+    else:
+        await interaction.response.send_message("❌ La oficina de quejas configurada ya no existe. El Estado está en reparación.", ephemeral=True)
+        
 @bot.tree.command(name="presente", description="Fichá tu lealtad diaria al Estado. Tenés 32hs de margen antes de perder la racha.")
 async def presente(interaction: discord.Interaction):
     usuario_id = str(interaction.user.id)
@@ -442,32 +469,32 @@ async def info(interaction: discord.Interaction):
     
     embed.add_field(
         name="🤖 Interacción e IA",
-        value="Mencioname en el chat con el comando /consultar para debatir con memoria procesal y doctrina cosmopolita. Además, el Estado cuenta con un sistema de **respuestas automáticas** para agilizar trámites frecuentes y mantener el orden del chat. Si el chat es activo, podrás ver como patrullo cada cierto tiempo mandando mensajes a la comunidad en el chat general",
+        value="Mencioname en el chat con el comando `/consultar` para debatir con memoria procesal. El Estado también cuenta con respuestas automáticas y patrullaje de propaganda en el chat general.",
         inline=False
     )
     
     embed.add_field(
-        name="🏛️ Vida Cívica y Académica",
-        value="**• /Exámenes:** Poné a prueba tus conocimientos sobre la doctrina del servidor.\n**• /Presente:** Firmá tu asistencia diaria para sumar mérito.\n**• /Ranking:** Consultá el escalafón público de los ciudadanos más destacados.",
+        name="🏛️ Vida Cívica y Recreación",
+        value="**• /examen:** Poné a prueba tus conocimientos sobre la doctrina.\n**• /presente:** Firmá tu asistencia diaria para sumar mérito.\n**• /ranking:** Consultá el escalafón de ciudadanos.\n**• /queja:** Presentá un reclamo formal (F-404).\n**• Zona de Ocio:** Disponemos de un canal exclusivo para coordinar partidas de Plato.",
         inline=False
     )
     
     embed.add_field(
-        name="🛡️ Protocolos Automatizados (Defensas)",
-        value="**• Aduana:** Expulsión preventiva de cuentas menores a 24hs.\n**• Estado de Sitio:** Bloqueo de chat ante incursiones masivas (Anti-Zerg).\n**• Antidisturbios:** Deportación por muros de texto o spam repetitivo.\n**• Anti-Nuke:** Bloqueo por exceso de menciones (Pings).",
+        name="🛡️ Protocolos de Defensa Automáticos",
+        value="**• Aduana:** Asignación automática del rol Ciudadano y expulsión preventiva de cuentas menores a 24hs.\n**• Estado de Sitio:** Bloqueo de chat ante incursiones masivas (Anti-Zerg).\n**• Antidisturbios:** Deportación por muros de texto.\n**• Anti-Nuke:** Bloqueo por destrucción de infraestructura.",
         inline=False
     )
     
-    if interaction.user.guild_permissions.administrator:
+    if interaction.user.guild_permissions.manage_messages:
         embed.add_field(
             name="⚖️ Código Penal (Solo Oficiales)",
-            value="`/advertir` - Labra un acta (Strike 1 a 3).\n`/aislar` - Incomunica a un ciudadano por tiempo definido.\n`/expulsar` - Deporta a un usuario del servidor.\n`/banear` - Ejecuta el exilio definitivo.",
+            value="`/advertir` - Labra un acta (Strike 1 a 5).\n`/aislar` - Incomunica por tiempo definido.\n`/expulsar` - Deporta a un usuario.\n`/banear` - Exilio definitivo.\n`/indultar` - Resta un strike del prontuario.",
             inline=False
         )
         
         embed.add_field(
             name="🏢 Gestión del Estado (Solo Oficiales)",
-            value="`/check` - Auditoría completa de defensas y jerarquías.\n`/levantar_sitio` - Restaura garantías tras una invasión.\n`!sinc` - Sincroniza el árbol jurisdiccional.",
+            value="`/check` - Auditoría de defensas.\n`/levantar_sitio` - Restaura garantías.\n`/set_oficina` - Fija el canal de denuncias.\n`/clear` - Incinera mensajes en masa.\n`!sinc` - Sincroniza jurisdicciones.",
             inline=False
         )
     else:
