@@ -760,6 +760,8 @@ import datetime
 async def advertir(interaction: discord.Interaction, usuario: discord.Member, motivo: str, cantidad: int = 1):
     if usuario.id == bot.user.id:
         return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** El Estado es intocable.", ephemeral=True)
+        await bardear_por_md(usuario, "warn", motivo)
+        await usuario.warn(reason=motivo)
     
     ref_faltas = db.reference(f'/servidores/{interaction.guild.id}/usuarios/{usuario.id}/advertencias')
     faltas_actuales = ref_faltas.get()
@@ -809,23 +811,22 @@ async def advertir(interaction: discord.Interaction, usuario: discord.Member, mo
 @bot.tree.command(name="expulsar", description="Deporta a un ciudadano del servidor.")
 async def expulsar(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
     if usuario.id == bot.user.id:
-        return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** No podés procesar a una oficial en funciones del Ministerio. El Estado es intocable.", ephemeral=True)
-    await usuario.kick(reason=motivo)
+        return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** El Estado es intocable.", ephemeral=True)
+        
+        await bardear_por_md(usuario, "kick", motivo)
+        await usuario.kick(reason=motivo)
+    
     await interaction.response.send_message(f"✅ {usuario.name} fue deportado exitosamente.", ephemeral=True)
-    await publicar_escrache(
-    interaction.guild,
-    "🔨 EXILIO DECRETADO",
-    f"El individuo {usuario.mention} fue erradicado del servidor.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
-    discord.Color.red()
-)
+    await publicar_escrache(interaction.guild, "🔨 EXILIO DECRETADO", f"El individuo {usuario.mention} fue deportado.\n**Motivo:** {motivo}", discord.Color.red())
     
 @bot.tree.command(name="banear", description="Exilia a un ciudadano del servidor de forma permanente.")
 async def banear(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
     if usuario.id == bot.user.id:
         return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** No podés procesar a una oficial en funciones del Ministerio. El Estado es intocable.", ephemeral=True)
     try:
+        await bardear_por_md(usuario, "ban", motivo)
         await usuario.ban(reason=motivo)
-        await interaction.response.send_message(f"✅ Se ejecutó el exilio definitivo de {usuario.name}.", ephemeral=True)
+        await interaction.response.send_message(f"✅ Se ejecutó al disidente {usuario.name}.", ephemeral=True)
         
         await publicar_escrache(
             interaction.guild,
@@ -842,6 +843,8 @@ async def banear(interaction: discord.Interaction, usuario: discord.Member, moti
 async def aislar(interaction: discord.Interaction, usuario: discord.Member, minutos: int, motivo: str):
     if usuario.id == bot.user.id:
         return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** No podés procesar a una oficial en funciones del Ministerio. El Estado es intocable.", ephemeral=True)
+        await bardear_por_md(usuario, "aislar", motivo)
+        await usuario.aislar(reason=motivo)
     
     tiempo = discord.utils.utcnow() + datetime.timedelta(minutos=minutos)
     await usuario.timeout(tiempo, reason=motivo)
