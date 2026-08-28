@@ -750,7 +750,6 @@ async def reportar(interaction: discord.Interaction, sospechoso: discord.Member,
             f"Su reclamo fue derivado al sector de 'Asuntos Inexistentes'.",
             f"Su denuncia no ha sido acatada, muchas gracias por su cooperación."
     ]
-        ]
         await interaction.response.send_message(random.choice(respuestas_burocraticas), ephemeral=True)
     else:
         await interaction.response.send_message("❌ La oficina de denuncias ya no existe.", ephemeral=True)
