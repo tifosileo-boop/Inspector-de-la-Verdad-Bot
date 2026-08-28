@@ -787,8 +787,6 @@ import datetime
 async def advertir(interaction: discord.Interaction, usuario: discord.Member, motivo: str, cantidad: int = 1):
     if usuario.id == bot.user.id:
         return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** El Estado es intocable.", ephemeral=True)
-        await bardear_por_md(usuario, "warn", motivo)
-        await usuario.warn(reason=motivo)
     
     ref_faltas = db.reference(f'/servidores/{interaction.guild.id}/usuarios/{usuario.id}/advertencias')
     faltas_actuales = ref_faltas.get()
@@ -800,6 +798,8 @@ async def advertir(interaction: discord.Interaction, usuario: discord.Member, mo
     
     accion_tomada = ""
     color_alerta = discord.Color.yellow()
+    
+    await bardear_por_md(usuario, "warn", motivo)
     
     try:
         if nuevas_faltas == 1:
