@@ -702,6 +702,35 @@ async def sinc(ctx):
     except Exception as e:
         await ctx.send(f"⚠️ Error burocrático al sincronizar en esta jurisdicción: {e}")
 
+import random
+
+async def bardear_por_md(usuario: discord.Member, tipo: str, motivo: str):
+    textos = {
+        "warn": [
+            "El Ministerio te tiene en la mira y te dimos una advertencia. Una mancha más al legajo por: {motivo}. Cuidá tus pasos.",
+            "¿Te creés por encima de la ley? Tenés un aviso oficial por: {motivo}. En la próxima puede haber bala."
+        ],
+        "aislar": [
+            "Al rincón a pensar. El Estado te quitó la voz por: {motivo}. Disfrutá del silencio.",
+            "Incomunicado del servidor. Tus derechos civiles están suspendidos temporalmente por: {motivo}. Es buen momento para reflexionar."
+        ],
+        "kick": [
+            "Deportado por incompetente. El Ministerio te revocó la ciudadanía por: {motivo}. Armá las valijas.",
+            "Directo al paredón. Tu presencia es una molestia para el servidor por: {motivo}. Chau, civil, reza para que algún día vuelvas a entrar.."
+        ],
+        "ban": [
+            "EXILIO DEFINITIVO. Fuiste borrado de los registros oficiales por: {motivo}. No vuelvas.",
+            "El peso de la ley cayó sobre vos. Permaban por: {motivo}. Andáte a joder a otro lado, idiota."
+        ]
+    }
+    
+    mensaje = random.choice(textos.get(tipo, ["El Ministerio ha tomado medidas penales contra su persona."]))
+    
+    try:
+        await usuario.send(f"⚖️ **NOTIFICACIÓN OFICIAL DEL MINISTERIO** ⚖️\n{mensaje.format(motivo=motivo)}")
+    except discord.Forbidden:
+        print(f"⚠️ El civil {usuario.name} tiene los MD cerrados. Se salvó de la bardeada institucional.")
+
 @bot.tree.command(name="reportar", description="Denunciá a un disidente ante el Ministerio de la Verdad.")
 async def reportar(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str):
     id_guardado = db.reference(f'/servidores/{interaction.guild.id}/canal_oficina').get()
