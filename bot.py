@@ -287,48 +287,6 @@ async def clear(interaction: discord.Interaction, cantidad: int):
         await interaction.followup.send("❌ **Error burocrático:** La Inspectora no tiene permiso para borrar mensajes acá.")
     except Exception as e:
         await interaction.followup.send(f"❌ **Falla en la incineradora:** {e}")
-
-@bot.tree.command(name="queja", description="Presentá un reclamo formal contra otro usuario ante el Ministerio. (Probablemente sea ignorado).")
-async def queja(interaction: discord.Interaction, reclamo: str):
-    respuestas_burocraticas = [
-        "Su queja ha sido recibida y enviada directamente a la trituradora de papel.",
-        "Entendido. Se analizará su reclamo en los próximos 10 a 15 años.",
-        "Su espiritu anarquista y caótico ha sido reportado, gracias por cooperar.",
-        "Su descontento ha sido registrado. Un senador lo visitará pronto para 'charlar'.",
-        "Formulario 404: Empatía no encontrada. Intente de nuevo el año que viene.",
-        "Su reclamo fue derivado al sector de 'Asuntos Inexistentes'.",
-        "Anotado en mi máquina de escribir invisible. Siga circulando.",
-        "Perfecto, su aporte no servirá de nada.",
-        "Recibimos su queja y no haremos nada al respecto, tenga un buen dia.",
-        "No se pudo enviar su queja, intentelo nuevamente."
-    ]
-
-    id_guardado = db.reference(f'/servidores/{interaction.guild.id}/canal_oficina').get()
-    
-    if not id_guardado:
-        return await interaction.response.send_message("⚠️ **Error burocrático:** Este servidor no tiene configurada una oficina de denuncias. Usen `/set_oficina` primero.", ephemeral=True)
-
-    canal_mods = interaction.client.get_channel(id_guardado)
-    
-    if canal_mods:
-        embed_oficina = discord.Embed(
-            title="📠 NUEVO FORMULARIO DE QUEJA (F-404)",
-            description=f"**Demandante:** {interaction.user.mention}\n**Reclamo:** {reclamo}",
-            color=discord.Color.dark_grey()
-        )
-        embed_oficina.set_thumbnail(url=interaction.user.display_avatar.url)
-        embed_oficina.set_footer(text="Estado del trámite: Cajoneado con éxito.")
-        
-        await canal_mods.send(embed=embed_oficina)
-
-        embed_civil = discord.Embed(
-            title="📋 TRÁMITE INGRESADO",
-            description=random.choice(respuestas_burocraticas),
-            color=discord.Color.light_grey()
-        )
-        await interaction.response.send_message(embed=embed_civil, ephemeral=True)
-    else:
-        await interaction.response.send_message("❌ La oficina de quejas configurada ya no existe. El Estado está en reparación.", ephemeral=True)
         
 @bot.tree.command(name="presente", description="Fichá tu lealtad diaria al Estado. Tenés 32hs de margen antes de perder la racha.")
 async def presente(interaction: discord.Interaction):
@@ -734,54 +692,68 @@ import random
 async def bardear_por_md(usuario: discord.Member, tipo: str, motivo: str):
     textos = {
         "warn": [
-            "El Ministerio te tiene en la mira y te dimos una advertencia. Una mancha más al legajo por: {motivo}. Cuidá tus pasos.",
-            "¿Te creés por encima de la ley? Tenés un aviso oficial por: {motivo}. En la próxima puede haber bala."
+            "El Ministerio te tiene en la mira. Una mancha más al legajo por: {motivo}. Cuidá tus pasos.",
+            "¿Te creés por encima de la ley? Tenés un aviso oficial por: {motivo}. A la próxima hay bala."
         ],
         "aislar": [
-            "Al rincón a pensar. El Estado te quitó la voz por: {motivo}. Disfrutá del silencio.",
-            "Incomunicado del servidor. Tus derechos civiles están suspendidos temporalmente por: {motivo}. Es buen momento para reflexionar."
+            "Al rincón a pensar. El Estado te quitó la voz por: {motivo}. Disfrutá el silencio.",
+            "Incomunicado. Tus derechos civiles están suspendidos temporalmente por: {motivo}."
         ],
         "kick": [
-            "Deportado por incompetente. El Ministerio te revocó la ciudadanía por: {motivo}. Armá las valijas.",
-            "Directo al paredón. Tu presencia es una molestia para el servidor por: {motivo}. Chau, civil, reza para que algún día vuelvas a entrar.."
+            "Deportado por incompetente. El Ministerio te revocó la ciudadanía por: {motivo}. Esperemos no verte pronto.",
+            "Afuera. Tu presencia es una molestia para el servidor por: {motivo}. Ojalá no regreses."
         ],
         "ban": [
             "EXILIO DEFINITIVO. Fuiste borrado de los registros oficiales por: {motivo}. No vuelvas.",
-            "El peso de la ley cayó sobre vos. Permaban por: {motivo}. Andáte a joder a otro lado, idiota."
+            "El peso de la ley cayó sobre vos. Fuiste ejecutado por: {motivo}. Disfrutá el ostracismo permanente."
         ]
     }
     
     mensaje = random.choice(textos.get(tipo, ["El Ministerio ha tomado medidas penales contra su persona."]))
     
     try:
-        await usuario.send(f"⚖️ **NOTIFICACIÓN OFICIAL DEL MINISTERIO** ⚖️\n{mensaje.format(motivo=motivo)}")
+        if usuario.dm_channel is None:
+            await usuario.create_dm()
+        
+        await usuario.dm_channel.send(f"⚖️ **NOTIFICACIÓN OFICIAL DEL MINISTERIO** ⚖️\n{mensaje.format(motivo=motivo)}")
+        print(f"✅ MD enviado con éxito a {usuario.name}.")
     except discord.Forbidden:
-        print(f"⚠️ El civil {usuario.name} tiene los MD cerrados. Se salvó de la bardeada institucional.")
-
-@bot.tree.command(name="reportar", description="Denunciá a un disidente ante el Ministerio de la Verdad.")
+        print(f"⚠️ {usuario.name} tiene los MD cerrados para bots de este server.")
+    except Exception as e:
+        print(f"❌ Falló el MD para {usuario.name}. Error de Discord: {e}")
+         
+@bot.tree.command(name="reportar", description="Denunciá a un disidente. El Ministerio te lo agradece (y luego te ignora).")
 async def reportar(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str):
     id_guardado = db.reference(f'/servidores/{interaction.guild.id}/canal_oficina').get()
     
     if not id_guardado:
-        await interaction.response.send_message("⚠️ Este servidor aún no configuró su oficina de denuncias con `/set_oficina`.", ephemeral=True)
-        return
+        return await interaction.response.send_message("⚠️ **Error burocrático:** La oficina no está configurada. Usen `/set_oficina`.", ephemeral=True)
         
-    canal_oficina = bot.get_channel(id_guardado)
+    canal_mods = interaction.client.get_channel(id_guardado)
     
-    expediente = (
-        f"🚨 **NUEVO REPORTE REGISTRADO** 🚨\n"
-        f"**Denunciante:** {interaction.user.mention}\n"
-        f"**Acusado:** {sospechoso.mention}\n"
-        f"**Cargo imputado:** {motivo}"
-    )
-    
-    if canal_oficina:
-        await canal_oficina.send(expediente)
-        await interaction.response.send_message(f"✅ Tu denuncia contra {sospechoso.display_name} fue radicada con éxito.", ephemeral=True)
+    if canal_mods:
+        embed_oficina = discord.Embed(
+            title="🚨 NUEVA DENUNCIA REGISTRADA",
+            description=f"**Denunciante (Informante):** {interaction.user.mention}\n**Acusado:** {sospechoso.mention}\n**Cargo imputado:** {motivo}",
+            color=discord.Color.dark_red()
+        )
+        embed_oficina.set_thumbnail(url=sospechoso.display_avatar.url)
+        await canal_mods.send(embed=embed_oficina)
+        
+        respuestas_burocraticas = [
+            f"✅ Tu denuncia contra {sospechoso.display_name} fue recibida y enviada a la trituradora de papel.",
+            f"✅ Denuncia radicada. Se investigará a {sospechoso.display_name} en los próximos 10 a 15 años.",
+            f"✅ Formulario procesado. Tu espíritu buchón ha sido recompensado con 0 puntos de crédito social.",
+            f"Su personalidad anarquista y caótica ha sido reportada, gracias por cooperar.",
+            f"Su descontento ha sido registrado. Un oficial de lealtad lo visitará pronto para 'charlar'.",
+            f"Formulario 404: Empatía no encontrada. Intente de nuevo el año que viene.",
+            f"Su reclamo fue derivado al sector de 'Asuntos Inexistentes'.",
+            f"Su denuncia no ha sido acatada, muchas gracias por su cooperación."
+    ]
+        ]
+        await interaction.response.send_message(random.choice(respuestas_burocraticas), ephemeral=True)
     else:
-        await interaction.response.send_message("❌ El canal de denuncias configurado ya no existe o fue borrado. Avísenle a un admin.", ephemeral=True)
-        
-import datetime 
+        await interaction.response.send_message("❌ La oficina de denuncias ya no existe.", ephemeral=True)
 
 @bot.tree.command(name="advertir", description="Labra un acta según el canal de Condenas (Sistema de 5 strikes).")
 async def advertir(interaction: discord.Interaction, usuario: discord.Member, motivo: str, cantidad: int = 1):
