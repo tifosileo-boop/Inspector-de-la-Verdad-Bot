@@ -13,6 +13,7 @@ import time
 import asyncio
 import os
 import google.generativeai as genai
+registro_insistencia = {}
 app = Flask('')
 
 @app.route('/')
