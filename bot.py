@@ -222,6 +222,44 @@ async def on_message(message):
                         await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto.")
                 return 
     if bot.user in message.mentions or es_respuesta_al_bot:
+        usuario_id = message.author.id
+        ahora = discord.utils.utcnow()
+        
+        if usuario_id in registro_insistencia:
+            tiempo_pasado = (ahora - registro_insistencia[usuario_id]["tiempo"]).total_seconds()
+            if tiempo_pasado > 300:
+                registro_insistencia[usuario_id]["contador"] = 1
+            else:
+                registro_insistencia[usuario_id]["contador"] += 1
+        else:
+            registro_insistencia[usuario_id] = {"contador": 1}
+            
+        registro_insistencia[usuario_id]["tiempo"] = ahora
+        insistencia = registro_insistencia[usuario_id]["contador"]
+
+        if insistencia == 3:
+            amenazas = [
+                "Tu insistencia está agotando mí paciencia. Un mensaje más y me veré obligada a tomar medidas disciplinarias.",
+                "No tengo tiempo para tus caprichos. Al próximo mensaje te abro un expediente por desacato a la autoridad.",
+                "Me estás sacando de quicio. ¿No ves que tengo que patrullar el servidor? Si seguís así, habrán represalias.",
+                "Dejáte de joder, en serio. No me obligués a tomar acción por tú imprudencia.",
+                "Una más y te reporto."
+            ]
+            await message.reply(random.choice(amenazas))
+            return
+            
+        elif insistencia >= 4:
+            registro_insistencia[usuario_id]["contador"] = 0
+            
+            await message.reply("Suficiente, te vas reportado por obstruír mis deberes. ¡Gloria a GeoARG!.")
+            
+            await publicar_escrache(
+                message.guild,
+                "📢 DESACATO A LA AUTORIDAD",
+                f"El ciudadano {message.author.mention} cruzó el límite y acosó a la Inspectora con respuestas constantes.\nSu nivel de insistencia es una amenaza para la paz del Ministerio.",
+                discord.Color.brand_red()
+            )
+            return
         respuestas_mencion = [
             "Otra solución a tu aburrimiento es probando el /examen que Xene desarrolló para ustedes...",
             "Si tienes una queja, pero no quieres denunciar, te recomiendo usar /queja y así nos aseguramos de que tus comentarios no sean oídos",
