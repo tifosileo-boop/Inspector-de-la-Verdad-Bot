@@ -969,7 +969,7 @@ modelo_inspectora = genai.GenerativeModel(model_name='gemini-3.1-flash-lite', sy
 @bot.tree.command(name="consultar", description="Hacéle una consulta oficial al archivo de la Inspectora.")
 async def consultar(interaction: discord.Interaction, pregunta: str):
     await interaction.response.defer()
-   try:
+    try:
         roles_usuario = [rol.name for rol in interaction.user.roles if rol.name != "@everyone"]
         texto_roles = ", ".join(roles_usuario) if roles_usuario else "Sin cargos (Civil)"
         
@@ -982,19 +982,16 @@ async def consultar(interaction: discord.Interaction, pregunta: str):
             texto_final = texto_final[:1900] + "...\n\n*(El expediente era demasiado extenso y fue recortado por la burocracia ministerial)*"
             
         await interaction.followup.send(texto_final)
-        
+      
     except Exception as e:
         error_msj = str(e).lower()
-        
         if "429" in error_msj or "quota" in error_msj:
-            await interaction.followup.send("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto con tantos reclamos, Google nos da un tiempo de refresco minimo entre consulta y consulta. Hagan fila y vuelvan a intentar en un par de minutos, civiles.")
-            
+            await interaction.followup.send("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto con tantos reclamos. Google nos da un tiempo de refresco mínimo.")
         elif "50035" in error_msj or "2000" in error_msj:
-            await interaction.followup.send("📜 **EXPEDIENTE RECHAZADO:** La resolución de la Inspectora era tan extensa que violó la Constitución de Discord (límite de caracteres). Formulá tu consulta de manera más acotada.")
-            
+            await interaction.followup.send("📜 **EXPEDIENTE RECHAZADO:** La resolución violó el límite de caracteres de Discord.")
         else:
-            await interaction.followup.send(f"❌ Acceso denegado a los archivos clasificados. Error interno: {str(e)[:150]}...")
-
+            await interaction.followup.send(f"❌ **Error procesal:** {e}")
+            
 keep_alive()
 token_secreto = os.getenv('DISCORD_TOKEN')
 bot.run(token_secreto) 
