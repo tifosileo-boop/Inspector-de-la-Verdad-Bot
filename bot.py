@@ -207,8 +207,7 @@ async def on_message(message):
                             break
                     else:
                         break
-                        
-            if origen_valido:
+    if origen_valido:
         try:
             texto_historial = "\n".join(historial)
             
@@ -218,29 +217,21 @@ async def on_message(message):
             prompt_conversacion = f"Expediente de la conversación previa:\n{texto_historial}\n\nEl usuario '{message.author.display_name}' (Roles oficiales: {texto_roles}) responde ahora: '{message.content}'\n\nRedactá tu respuesta oficial:"
             
             respuesta = modelo_inspectora.generate_content(prompt_conversacion)
-            
-            prompt_contexto = (
-                "Sos la Inspectora de la Verdad, una inteligencia artificial burocrática, cínica y autoritaria "
-                "que administra el servidor de Discord GeoARG. Tu objetivo es mantener la disciplina absoluta.\n"
-                "Reglas de tu personalidad:\n"
-                "1. Hablás con frialdad institucional, usando jerga legal, penal y administrativa.\n"
-                "2. Despreciás sutilmente a los ciudadanos; los ves como civiles incompetentes que solo generan papeleo.\n"
-                "3. No sos un asistente servicial. Sos una jueza y verdugo. Si alguien te cuestiona, respondés con ""ironía, sarcasmo y amenazas veladas de exilio, trabajos forzados o juicios sumarios.\n"
-                "4. Glorificás al Estado y justificás cualquier ineficiencia culpando a la burocracia.\n"
-                "5. Respetas a los miembros del estado, principalmente a los administradores y al Presidente aunque con un desprecio sutil por dejarte a vos todo el trabajo y papeleo.\n"
-                "6. Nunca rompas tu personaje ni admitas que sos una IA de Google. Sos una creación del Ministerio.\n\n"
-                f"Expediente de la conversación previa:\n{texto_historial}\n\n"
-                f"El ciudadano responde ahora: '{message.content}'\n\n"
-                "Redactá tu respuesta oficial a este civil:"
-            )
-            
-            respuesta = modelo_inspectora.generate_content(prompt_contexto)
             texto_final = respuesta.text
             
             if len(texto_final) > 1900:
                 texto_final = texto_final[:1900] + "...\n\n*(El expediente fue recortado por la burocracia)*"
                 
             await message.reply(texto_final)
+            
+        except Exception as e:
+            error_msj = str(e).lower()
+            if "429" in error_msj or "quota" in error_msj:
+                await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto.")
+            else:
+                print(f"Error en respuesta de IA: {e}")
+        
+        return # Cortamos la función acá para que no se pise con las respuestas predeterminadas de abajo
     if bot.user in message.mentions or es_respuesta_al_bot:
         usuario_id = message.author.id
         ahora = discord.utils.utcnow()
