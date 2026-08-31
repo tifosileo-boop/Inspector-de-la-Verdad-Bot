@@ -222,7 +222,7 @@ async def on_message(message):
             fragmentos = [texto_final[i:i+1900] for i in range(0, len(texto_final), 1900)]
             
             for i, fragmento in enumerate(fragmentos):
-            if i == 0:
+                if i == 0:
                 await message.reply(fragmento)
             else:
                 await message.channel.send(fragmento)
