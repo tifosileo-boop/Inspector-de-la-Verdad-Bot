@@ -994,6 +994,95 @@ async def consultar(interaction: discord.Interaction, pregunta: str):
             await interaction.followup.send("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto. Google nos da un tiempo de refresco mínimo.")
         else:
             await interaction.followup.send(f"❌ **Error procesal:** {e}")
+
+import discord
+import asyncio
+
+class SimulacroCaso1(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=30.0)
+        self.resultado = None
+
+    @discord.ui.button(label="Aplicar 1 Warn y calmar las aguas", style=discord.ButtonStyle.gray)
+    async def opcion_a(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.resultado = False
+        await interaction.response.send_message("❌ INCOMPETENCIA: Dejaste expuestos los datos personales. Reprobado.", ephemeral=True)
+        self.stop()
+
+    @discord.ui.button(label="5 Warns (Ban) y purgar evidencia", style=discord.ButtonStyle.red)
+    async def opcion_b(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.resultado = True
+        await interaction.response.send_message("✅ CORRECTO: Identidad protegida y amenaza neutralizada. Excelente.", ephemeral=True)
+        self.stop()
+
+    async def on_timeout(self):
+        self.resultado = False
+ 
+
+@bot.tree.command(name="simulacro_admin", description="Inicia la prueba de fuego para oficiales.")
+async def simulacro_admin(interaction: discord.Interaction):
+    vista = SimulacroCaso1()
+    
+    embed = discord.Embed(
+        title="🚨 SIMULACRO: VIOLACIÓN DE IDENTIDAD",
+        description="**Tiempo:** 30 Segundos.\n\nDos usuarios están discutiendo agresivamente en #general y acaban de publicar los nombres reales y direcciones del otro. ¿Qué medida tomás?",
+        color=discord.Color.dark_red()
+    )
+    
+    await interaction.response.send_message(embed=embed, view=vista, ephemeral=True)
+
+import discord
+import asyncio
+
+class SimulacroNuke(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=60.0)
+
+    @discord.ui.button(label="Banear a todos los activos", style=discord.ButtonStyle.gray)
+    async def opcion_a(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("❌ INCOMPETENCIA: Baneaste inocentes por pánico. La cura fue peor que la enfermedad. Reprobado.", ephemeral=True)
+        self.stop()
+
+    @discord.ui.button(label="Revocar permisos y expulsar integración", style=discord.ButtonStyle.green)
+    async def opcion_b(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("✅ CORRECTO: Amenaza contenida con frialdad y precisión quirúrgica. El Ministerio está orgulloso.", ephemeral=True)
+        self.stop()
+        
+    @discord.ui.button(label="Llamar a Xene", style=discord.ButtonStyle.red)
+    async def opcion_c(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("❌ COBARDÍA: No tienen que depender de Xene para todo, es su hora de actuar. El server se hizo cenizas mientras esperabas. Reprobado.", ephemeral=True)
+        self.stop()
+
+    async def on_timeout(self):
+        pass 
+
+@bot.tree.command(name="simular_nuke", description="Inicia un simulacro de brecha masiva. (Solo en canales de entrenamiento)")
+async def simular_nuke(interaction: discord.Interaction):
+ 
+    await interaction.response.send_message("⚠️ **Iniciando inyección de pánico artificial...**", ephemeral=True)
+    
+    canal = interaction.channel
+    
+    logs_falsos = [
+        "🗑️ *Canal #general eliminado por [Webhook]*",
+        "🚫 *Usuario @civil_random fue baneado.*",
+        "🗑️ *Canal #debates eliminado por [Webhook]*",
+        "⚠️ **ADVERTENCIA:** Múltiples roles administrativos modificados.",
+        "🚫 *Usuario @veterano fue baneado.*"
+    ]
+    
+    for log in logs_falsos:
+        await canal.send(log)
+        await asyncio.sleep(1.2)
+        
+    vista = SimulacroNuke()
+    embed = discord.Embed(
+        title="🔥 ALERTA ROJA: INFRAESTRUCTURA COMPROMETIDA",
+        description="**Tiempo:** 60 Segundos.\n\nUn webhook corrupto está borrando canales y baneando gente en masa. ¿Qué orden ejecutás?",
+        color=discord.Color.dark_red()
+    )
+    
+    await canal.send(embed=embed, view=vista)
             
 keep_alive()
 token_secreto = os.getenv('DISCORD_TOKEN')
