@@ -219,11 +219,14 @@ async def on_message(message):
             respuesta = modelo_inspectora.generate_content(prompt_conversacion)
             texto_final = respuesta.text
             
-            if len(texto_final) > 1900:
-                texto_final = texto_final[:1900] + "...\n\n*(El expediente fue recortado por la burocracia)*"
-                
-            await message.reply(texto_final)
+            fragmentos = [texto_final[i:i+1900] for i in range(0, len(texto_final), 1900)]
             
+            for i, fragmento in enumerate(fragmentos):
+                if i == 0:
+                    await message.reply(fragmento)
+                else:
+                    await message.channel.send(fragmento)
+                    
         except Exception as e:
             error_msj = str(e).lower()
             if "429" in error_msj or "quota" in error_msj:
@@ -976,14 +979,14 @@ async def consultar(interaction: discord.Interaction, pregunta: str):
         
         prompt_dinamico = f"El usuario '{interaction.user.display_name}' (Roles oficiales: {texto_roles}) te hace la siguiente consulta formal: '{pregunta}'"
         
-        respuesta = modelo_inspectora.generate_content(prompt_dinamico)
+       respuesta = modelo_inspectora.generate_content(prompt_dinamico)
         texto_final = respuesta.text
         
-        if len(texto_final) > 1900:
-            texto_final = texto_final[:1900] + "...\n\n*(El expediente era demasiado extenso y fue recortado por la burocracia ministerial)*"
+        fragmentos = [texto_final[i:i+1900] for i in range(0, len(texto_final), 1900)]
+        
+        for fragmento in fragmentos:
+            await interaction.followup.send(fragmento)
             
-        await interaction.followup.send(texto_final)
-      
     except Exception as e:
         error_msj = str(e).lower()
         if "429" in error_msj or "quota" in error_msj:
