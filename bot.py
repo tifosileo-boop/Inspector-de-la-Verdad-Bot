@@ -223,9 +223,9 @@ async def on_message(message):
             
             for i, fragmento in enumerate(fragmentos):
                 if i == 0:
-                await message.reply(fragmento)
-            else:
-                await message.channel.send(fragmento)
+                    await message.reply(fragmento)
+                else:
+                    await message.channel.send(fragmento)
                     
         except Exception as e:
             error_msj = str(e).lower()
