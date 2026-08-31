@@ -222,10 +222,10 @@ async def on_message(message):
             fragmentos = [texto_final[i:i+1900] for i in range(0, len(texto_final), 1900)]
             
             for i, fragmento in enumerate(fragmentos):
-                if i == 0:
-                    await message.reply(fragmento)
-                else:
-                    await message.channel.send(fragmento)
+            if i == 0:
+                await message.reply(fragmento)
+            else:
+                await message.channel.send(fragmento)
                     
         except Exception as e:
             error_msj = str(e).lower()
@@ -985,8 +985,12 @@ async def consultar(interaction: discord.Interaction, pregunta: str):
         
         fragmentos = [texto_final[i:i+1900] for i in range(0, len(texto_final), 1900)]
         
-        for fragmento in fragmentos:
-            await interaction.followup.send(fragmento)
+        for i, fragmento in enumerate(fragmentos):
+            if i == 0:
+                await interaction.followup.send(fragmento)
+            else:
+
+                await interaction.channel.send(fragmento)
             
     except Exception as e:
         error_msj = str(e).lower()
