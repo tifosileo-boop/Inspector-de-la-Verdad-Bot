@@ -1017,6 +1017,45 @@ class SimulacroCaso1(discord.ui.View):
 
     async def on_timeout(self):
         self.resultado = False
+
+class SimulacroDoxing(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=30.0)
+        self.mensaje = None
+
+    @discord.ui.button(label="Aplicar 1 Warn y borrar mensajes", style=discord.ButtonStyle.gray)
+    async def opcion_a(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("❌ ERROR PROCESAL: La filtración de datos requiere pena máxima directa. Reprobado.", ephemeral=True)
+        self.stop()
+
+    @discord.ui.button(label="Aplicar 5 Warns (Ban) y purgar evidencia", style=discord.ButtonStyle.green)
+    async def opcion_b(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("✅ CORRECTO: Se protegió la integridad personal de los civiles y se eliminó la amenaza.", ephemeral=True)
+        self.stop()
+
+    @discord.ui.button(label="Aislar a ambos por 1 hora", style=discord.ButtonStyle.red)
+    async def opcion_c(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("❌ NEGLIGENCIA: El aislamiento no borra los datos personales expuestos. Reprobado.", ephemeral=True)
+        self.stop()
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        if self.mensaje:
+            embed = self.mensaje.embeds[0]
+            embed.description += "\n\n⏳ **TIEMPO AGOTADO:** La información personal se viralizó en el servidor."
+            embed.color = discord.Color.dark_grey()
+            await self.mensaje.edit(embed=embed, view=self)
+
+@bot.tree.command(name="simular_doxing", description="Simulacro de filtración de datos.")
+async def simular_doxing(interaction: discord.Interaction):
+    vista = SimulacroDoxing()
+    embed = discord.Embed(
+        title="🚨 SIMULACRO: VIOLACIÓN DE PRIVACIDAD",
+        description="**Tiempo:** 30 Segundos.\n\nDos usuarios se están insultando y uno acaba de publicar la dirección real y el nombre completo del otro. Tu decisión:",
+        color=discord.Color.orange()
+    )
+    vista.mensaje = await interaction.response.send_message(embed=embed, view=vista)
  
 
 @bot.tree.command(name="simulacro_admin", description="Inicia la prueba de fuego para oficiales.")
@@ -1031,44 +1070,48 @@ async def simulacro_admin(interaction: discord.Interaction):
     
     await interaction.response.send_message(embed=embed, view=vista, ephemeral=True)
 
-import discord
-import asyncio
-
 class SimulacroNuke(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=60.0)
+        self.mensaje = None 
+        
+        import discord
+        import asyncio
 
     @discord.ui.button(label="Banear a todos los activos", style=discord.ButtonStyle.gray)
     async def opcion_a(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("❌ INCOMPETENCIA: Baneaste inocentes por pánico. La cura fue peor que la enfermedad. Reprobado.", ephemeral=True)
+        await interaction.response.send_message("❌ INCOMPETENCIA: Baneaste inocentes por pánico. Reprobado.", ephemeral=True)
         self.stop()
 
     @discord.ui.button(label="Revocar permisos y expulsar integración", style=discord.ButtonStyle.green)
     async def opcion_b(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("✅ CORRECTO: Amenaza contenida con frialdad y precisión quirúrgica. El Ministerio está orgulloso.", ephemeral=True)
+        await interaction.response.send_message("✅ CORRECTO: Amenaza contenida con frialdad institucional.", ephemeral=True)
         self.stop()
         
     @discord.ui.button(label="Llamar a Xene", style=discord.ButtonStyle.red)
     async def opcion_c(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("❌ COBARDÍA: No tienen que depender de Xene para todo, es su hora de actuar. El server se hizo cenizas mientras esperabas. Reprobado.", ephemeral=True)
+        await interaction.response.send_message("❌ COBARDÍA: No dependan de Xene para actuar, no llegará a tiempo y es TU hora de actuar. El server se hizo cenizas. Reprobado.", ephemeral=True)
         self.stop()
 
     async def on_timeout(self):
-        pass 
+        for child in self.children:
+            child.disabled = True
+        if self.mensaje:
+            embed = self.mensaje.embeds[0]
+            embed.description += "\n\n💀 **TIEMPO AGOTADO:** Te quedaste congelado. El Ministerio ha caído."
+            embed.color = discord.Color.dark_grey()
+            await self.mensaje.edit(embed=embed, view=self)
 
-@bot.tree.command(name="simular_nuke", description="Inicia un simulacro de brecha masiva. (Solo en canales de entrenamiento)")
+@bot.tree.command(name="simular_nuke", description="Inicia un simulacro de brecha masiva.")
 async def simular_nuke(interaction: discord.Interaction):
- 
     await interaction.response.send_message("⚠️ **Iniciando inyección de pánico artificial...**", ephemeral=True)
-    
     canal = interaction.channel
     
     logs_falsos = [
         "🗑️ *Canal #general eliminado por [Webhook]*",
         "🚫 *Usuario @civil_random fue baneado.*",
         "🗑️ *Canal #debates eliminado por [Webhook]*",
-        "⚠️ **ADVERTENCIA:** Múltiples roles administrativos modificados.",
-        "🚫 *Usuario @veterano fue baneado.*"
+        "⚠️ **ADVERTENCIA:** Múltiples roles administrativos modificados."
     ]
     
     for log in logs_falsos:
@@ -1078,11 +1121,11 @@ async def simular_nuke(interaction: discord.Interaction):
     vista = SimulacroNuke()
     embed = discord.Embed(
         title="🔥 ALERTA ROJA: INFRAESTRUCTURA COMPROMETIDA",
-        description="**Tiempo:** 60 Segundos.\n\nUn webhook corrupto está borrando canales y baneando gente en masa. ¿Qué orden ejecutás?",
+        description="**Tiempo:** 60 Segundos.\n\nUn webhook corrupto está borrando canales y baneando gente. ¿Qué orden ejecutás?",
         color=discord.Color.dark_red()
     )
     
-    await canal.send(embed=embed, view=vista)
+    vista.mensaje = await canal.send(embed=embed, view=vista)
             
 keep_alive()
 token_secreto = os.getenv('DISCORD_TOKEN')
