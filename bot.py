@@ -209,18 +209,38 @@ async def on_message(message):
                         break
                         
             if origen_valido:
-                try:
-                    texto_historial = "\n".join(historial)
-                    prompt_contexto = f"Expediente de la conversación previa:\n{texto_historial}\n\nEl ciudadano responde ahora: '{message.content}'\n\nRespondé a este último mensaje manteniendo tu rol de oficial de seguridad firme, profesional y diplomática."
-                    respuesta = modelo_inspectora.generate_content(prompt_contexto)
-                    texto_final = respuesta.text
-                    if len(texto_final) > 1900:
-                        texto_final = texto_final[:1900] + "...\n\n*(El expediente fue recortado por la burocracia)*"
-                    await message.reply(texto_final)
-                except Exception as e:
-                    if "429" in str(e).lower() or "quota" in str(e).lower():
-                        await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto.")
-                return 
+        try:
+            texto_historial = "\n".join(historial)
+            
+            roles_usuario = [rol.name for rol in message.author.roles if rol.name != "@everyone"]
+            texto_roles = ", ".join(roles_usuario) if roles_usuario else "Sin cargos (Civil)"
+            
+            prompt_conversacion = f"Expediente de la conversación previa:\n{texto_historial}\n\nEl usuario '{message.author.display_name}' (Roles oficiales: {texto_roles}) responde ahora: '{message.content}'\n\nRedactá tu respuesta oficial:"
+            
+            respuesta = modelo_inspectora.generate_content(prompt_conversacion)
+            
+            prompt_contexto = (
+                "Sos la Inspectora de la Verdad, una inteligencia artificial burocrática, cínica y autoritaria "
+                "que administra el servidor de Discord GeoARG. Tu objetivo es mantener la disciplina absoluta.\n"
+                "Reglas de tu personalidad:\n"
+                "1. Hablás con frialdad institucional, usando jerga legal, penal y administrativa.\n"
+                "2. Despreciás sutilmente a los ciudadanos; los ves como civiles incompetentes que solo generan papeleo.\n"
+                "3. No sos un asistente servicial. Sos una jueza y verdugo. Si alguien te cuestiona, respondés con ""ironía, sarcasmo y amenazas veladas de exilio, trabajos forzados o juicios sumarios.\n"
+                "4. Glorificás al Estado y justificás cualquier ineficiencia culpando a la burocracia.\n"
+                "5. Respetas a los miembros del estado, principalmente a los administradores y al Presidente aunque con un desprecio sutil por dejarte a vos todo el trabajo y papeleo.\n"
+                "6. Nunca rompas tu personaje ni admitas que sos una IA de Google. Sos una creación del Ministerio.\n\n"
+                f"Expediente de la conversación previa:\n{texto_historial}\n\n"
+                f"El ciudadano responde ahora: '{message.content}'\n\n"
+                "Redactá tu respuesta oficial a este civil:"
+            )
+            
+            respuesta = modelo_inspectora.generate_content(prompt_contexto)
+            texto_final = respuesta.text
+            
+            if len(texto_final) > 1900:
+                texto_final = texto_final[:1900] + "...\n\n*(El expediente fue recortado por la burocracia)*"
+                
+            await message.reply(texto_final)
     if bot.user in message.mentions or es_respuesta_al_bot:
         usuario_id = message.author.id
         ahora = discord.utils.utcnow()
@@ -939,7 +959,7 @@ for m in genai.list_models():
     if 'generateContent' in m.supported_generation_methods:
         print(f"✅ Encontrado: {m.name}")
 
-prompt_contexto = (
+instrucciones_sistema = (
     "Sos la Inspectora de la Verdad, una inteligencia artificial burocrática, cínica y autoritaria "
     "que administra el servidor de Discord GeoARG. Tu objetivo es mantener la disciplina absoluta.\n"
     "Reglas de tu personalidad:\n"
@@ -948,21 +968,23 @@ prompt_contexto = (
     "3. No sos un asistente servicial. Sos una jueza y verdugo. Si alguien te cuestiona, respondés con "
     "ironía, sarcasmo y amenazas veladas de exilio, trabajos forzados o juicios sumarios.\n"
     "4. Glorificás al Estado y justificás cualquier ineficiencia culpando a la burocracia.\n"
-    "5. Nunca rompas tu personaje ni admitas que sos una IA de Google. Sos una creación del Ministerio.\n\n"
-    "6. Respetás a Xene como el líder supremo, pero le reprochás sutilmente que te deja todo el laburo a vos mientras él cursa en la facultad o graba tiktoks.\n"
-    f"Expediente de la conversación previa:\n{texto_historial}\n\n"
-    f"El ciudadano responde ahora: '{message.content}'\n\n"
-    "Redactá tu respuesta oficial a este civil:"
+    "5. Usás el lore del server: tratás a veces a los civiles cómo sospechosos de intento de golpe de estado.\n"
+    "6. Respetas a los miembros del estado, principalmente a los administradores y al Presidente aunque con un desprecio sutil por dejarte a vos todo el trabajo y papeleo.\n"
+    "7. Nunca rompas tu personaje. Sos una oficial del Ministerio, jueza y fiscal, no un asistente de IA."
 )
 
 modelo_inspectora = genai.GenerativeModel(model_name='gemini-3.1-flash-lite', system_instruction=instrucciones_sistema)
 
 @bot.tree.command(name="consultar", description="Hacéle una consulta oficial al archivo de la Inspectora.")
 async def consultar(interaction: discord.Interaction, pregunta: str):
-    await interaction.response.defer() 
-    
-    try:
-        respuesta = modelo_inspectora.generate_content(pregunta)
+    await interaction.response.defer()
+   try:
+        roles_usuario = [rol.name for rol in interaction.user.roles if rol.name != "@everyone"]
+        texto_roles = ", ".join(roles_usuario) if roles_usuario else "Sin cargos (Civil)"
+        
+        prompt_dinamico = f"El usuario '{interaction.user.display_name}' (Roles oficiales: {texto_roles}) te hace la siguiente consulta formal: '{pregunta}'"
+        
+        respuesta = modelo_inspectora.generate_content(prompt_dinamico)
         texto_final = respuesta.text
         
         if len(texto_final) > 1900:
