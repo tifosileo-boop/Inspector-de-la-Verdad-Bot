@@ -973,13 +973,14 @@ modelo_inspectora = genai.GenerativeModel(model_name='gemini-3.1-flash-lite', sy
 @bot.tree.command(name="consultar", description="Hacéle una consulta oficial al archivo de la Inspectora.")
 async def consultar(interaction: discord.Interaction, pregunta: str):
     await interaction.response.defer()
+    
     try:
         roles_usuario = [rol.name for rol in interaction.user.roles if rol.name != "@everyone"]
         texto_roles = ", ".join(roles_usuario) if roles_usuario else "Sin cargos (Civil)"
         
         prompt_dinamico = f"El usuario '{interaction.user.display_name}' (Roles oficiales: {texto_roles}) te hace la siguiente consulta formal: '{pregunta}'"
         
-       respuesta = modelo_inspectora.generate_content(prompt_dinamico)
+        respuesta = modelo_inspectora.generate_content(prompt_dinamico)
         texto_final = respuesta.text
         
         fragmentos = [texto_final[i:i+1900] for i in range(0, len(texto_final), 1900)]
@@ -990,9 +991,7 @@ async def consultar(interaction: discord.Interaction, pregunta: str):
     except Exception as e:
         error_msj = str(e).lower()
         if "429" in error_msj or "quota" in error_msj:
-            await interaction.followup.send("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto con tantos reclamos. Google nos da un tiempo de refresco mínimo.")
-        elif "50035" in error_msj or "2000" in error_msj:
-            await interaction.followup.send("📜 **EXPEDIENTE RECHAZADO:** La resolución violó el límite de caracteres de Discord.")
+            await interaction.followup.send("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto. Google nos da un tiempo de refresco mínimo.")
         else:
             await interaction.followup.send(f"❌ **Error procesal:** {e}")
             
