@@ -192,7 +192,7 @@ async def on_message(message):
             historial = []
             msg_actual = message
             
-            async with message.channel.typing():
+        async with message.channel.typing():
             for _ in range(5):
                 if msg_actual.reference:
                     try:
