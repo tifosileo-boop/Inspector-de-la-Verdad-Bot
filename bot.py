@@ -192,7 +192,7 @@ async def on_message(message):
             historial = []
             msg_actual = message
             
-        async with message.channel.typing():
+            async with message.channel.typing():
             for _ in range(5):
                 if msg_actual.reference:
                     try:
@@ -212,9 +212,8 @@ async def on_message(message):
         if origen_valido: 
             try:
                 texto_historial = "\n".join(historial)
-            
-            roles_usuario = [rol.name for rol in message.author.roles if rol.name != "@everyone"]
-            texto_roles = ", ".join(roles_usuario) if roles_usuario else "Sin cargos (Civil)"
+                roles_usuario = [rol.name for rol in message.author.roles if rol.name != "@everyone"]
+                texto_roles = ", ".join(roles_usuario) if roles_usuario else "Sin cargos (Civil)"
             
             prompt_conversacion = f"Expediente de la conversación previa:\n{texto_historial}\n\nEl usuario '{message.author.display_name}' (Roles oficiales: {texto_roles}) responde ahora: '{message.content}'\n\nRedactá tu respuesta oficial:"
             
