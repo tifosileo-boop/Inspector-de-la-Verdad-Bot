@@ -207,7 +207,7 @@ async def on_message(message):
                             break
                     else:
                         break
-    if origen_valido: False 
+    if origen_valido = False 
         try:
             texto_historial = "\n".join(historial)
             
