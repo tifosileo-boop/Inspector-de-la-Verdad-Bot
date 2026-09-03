@@ -192,24 +192,26 @@ async def on_message(message):
             historial = []
             msg_actual = message
             
-            async with message.channel.typing():
-                for _ in range(5):
-                    if msg_actual.reference:
-                        try:
-                            msg_prev = await message.channel.fetch_message(msg_actual.reference.message_id)
-                            if msg_prev.interaction and msg_prev.interaction.name == "consultar":
-                                origen_valido = True
-                            
-                            autor = "Inspectora" if msg_prev.author == bot.user else "Ciudadano"
-                            historial.insert(0, f"{autor}: {msg_prev.content[:400]}")
-                            msg_actual = msg_prev
-                        except:
-                            break
-                    else:
+        async with message.channel.typing():
+            for _ in range(5):
+                if msg_actual.reference:
+                    try:
+                        msg_prev = await message.channel.fetch_message(msg_actual.reference.message_id)
+                        if msg_prev.interaction and msg_prev.interaction.name == "consultar":
+                            origen_valido = True
+                        
+                        autor = "Inspectora" if msg_prev.author == bot.user else "Ciudadano"
+                        historial.insert(0, f"{autor}: {msg_prev.content[:400]}")
+                        msg_actual = msg_prev
+                    
+                    except:
                         break
-    if origen_valido = False 
-        try:
-            texto_historial = "\n".join(historial)
+                else:
+                    break
+        
+        if origen_valido: 
+            try:
+                texto_historial = "\n".join(historial)
             
             roles_usuario = [rol.name for rol in message.author.roles if rol.name != "@everyone"]
             texto_roles = ", ".join(roles_usuario) if roles_usuario else "Sin cargos (Civil)"
