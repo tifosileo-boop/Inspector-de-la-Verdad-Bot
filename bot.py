@@ -158,8 +158,8 @@ async def on_message(message):
                 palabras_unicas = set(palabras)
                 ratio_unicidad = len(palabras_unicas) / len(palabras)
                 
-                es_spam_repetitivo = ratio_unicidad < 0.25 
-                es_spam_vertical = message.content.count('\n') > 20 
+                es_spam_repetitivo = ratio_unicidad < 0.25
+                es_spam_vertical = message.content.count('\n') > 35
 
                 if es_spam_repetitivo or es_spam_vertical:
                     await message.delete()
@@ -763,18 +763,14 @@ async def bardear_por_md(usuario: discord.Member, tipo: str, motivo: str):
         ]
     }
     
-    mensaje = random.choice(textos.get(tipo, ["El Ministerio ha tomado medidas penales contra su persona."]))
+    mensaje_elegido = random.choice(textos.get(tipo, ["El Ministerio ha tomado medidas penales contra su persona."]))
     
     try:
-        if usuario.dm_channel is None:
-            await usuario.create_dm()
-        
-        await usuario.dm_channel.send(f"⚖️ **NOTIFICACIÓN OFICIAL DEL MINISTERIO** ⚖️\n{mensaje.format(motivo=motivo)}")
-        print(f"✅ MD enviado con éxito a {usuario.name}.")
+        await usuario.send(f"⚖️ **NOTIFICACIÓN OFICIAL DEL MINISTERIO** ⚖️\n{mensaje_elegido}")
     except discord.Forbidden:
-        print(f"⚠️ {usuario.name} tiene los MD cerrados para bots de este server.")
-    except Exception as e:
-        print(f"❌ Falló el MD para {usuario.name}. Error de Discord: {e}")
+        canal_penitencia = bot.get_channel(1540161577863614594) 
+        if canal_penitencia:
+            await canal_penitencia.send(f"⚠️ {usuario.mention}, el Ministerio intentó notificarle su sanción por privado, pero tenía la casilla bloqueada como un cobarde.")
          
 @bot.tree.command(name="reportar", description="Denunciá a un disidente. El Ministerio te lo agradece (y luego te ignora).")
 async def reportar(interaction: discord.Interaction, sospechoso: discord.Member, motivo: str):
