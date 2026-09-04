@@ -125,7 +125,7 @@ async def transmision_oficial():
             "Las quejas por el frío de la costa se consideran debilidad física. Abríguense bien.",
             "Abusar del chat de voz sin un micrófono decente viola la ley de contaminación acústica. Primer aviso.",
             "Si la burocracia tarda, es porque el sistema funciona. Agradezcan la lentitud del Estado.",
-            "Pedir refuerzos y después no cubrir el flanco es causal de exilio inmediato. Defiendan el territorio."
+            "Pedir refuerzos y después no cubrir el flanco es causal de exilio inmediato. Defiendan el territorio.",
             "Dorado, dejá de intentar piropearme o cortejarme. En una de estas te voy a advertir y no te voy a indultar.",
             "📺 **Directiva Habitacional de la biblioteca de archivos:** La mala gestión de su zona y la información ineficiente serán penalizadas. Planifiquen bien, o el Estado expropiará sus terrenos.",
             "El Ministerio decreta que jugar Minecraft en modo Hardcore y morir por caída es selección natural.",
