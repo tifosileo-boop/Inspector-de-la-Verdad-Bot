@@ -44,6 +44,22 @@ intents.members = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+@bot.event
+async def on_guild_join(guild):
+    id_geoarg = 1394371062111666182
+    
+    if guild.id != id_geoarg:
+        canal = guild.system_channel or guild.text_channels[0]
+        if canal:
+            try:
+                await canal.send("🚫 **ERROR DE JURISDICCIÓN:** Este Ministerio opera exclusivamente en GeoARG. Carecen de los permisos burocráticos necesarios para retenerme. Procedo a retirarme.")
+            except:
+                pass
+                
+        await guild.leave()
+        print(f"⚖️ La Inspectora desertó del servidor no autorizado: {guild.name}")
+    
+
 async def publicar_escrache(guild, titulo, descripcion, color):
     canal_id = db.reference(f'/servidores/{guild.id}/canal_alertas').get()
     
