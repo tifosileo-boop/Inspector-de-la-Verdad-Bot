@@ -995,8 +995,6 @@ async def consultar(interaction: discord.Interaction, pregunta: str):
         else:
             await interaction.followup.send(f"❌ **Error procesal:** {e}")
 
-import discord
-import asyncio
 
 class SimulacroCaso1(discord.ui.View):
     def __init__(self):
