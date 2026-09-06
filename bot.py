@@ -133,7 +133,7 @@ async def transmision_oficial():
             "NOGAMI TIENE PROHIBIDO HACER HEAD CANONS DE XENE SIN SU CONSENTIMIENTO... Tratamos de arrestarla, pero para ella los castigos le resultaron como premios...",
             "Tip de la vida real: Los políticos son una mentira, solo la democracia es la que verdaderamente importa, no votes a tú político local",
             "Caer en combate por fuego amigo es un honor patriótico. Quejarse no.",
-            "Recuerda ser demostrar tú actividad con las fichas de lealtad usando /presente todos los días. El !bump también ayuda."
+            "Recuerda ser demostrar tú actividad con las fichas de lealtad usando /presente todos los días. El !bump también ayuda.",
             "El Ministerio recuerda que lavar el mate es considerado un delito federal de traición a la patria.",
             "Formar alianzas dudosas a espaldas del Estado terminará con un bloqueo en tu IP. Nomás digo.",
             "Aquel que exija derechos sin conocer sus obligaciones será condenado a ayudar a Xene a estudiar Derecho Civil a las 7 AM con viento en contra.",
@@ -243,6 +243,7 @@ async def on_message(message):
                         await message.reply(fragmento)
                     else:
                         await message.channel.send(fragmento)
+                    await asyncio.sleep(1.5)
                         
             except Exception as e:
                 error_msj = str(e).lower()
@@ -250,8 +251,8 @@ async def on_message(message):
                     await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto. Google nos da un tiempo de refresco mínimo.")
                 else:
                     print(f"Error procesal en IA: {e}")
-        
-        return 
+            return 
+            
     if bot.user in message.mentions or es_respuesta_al_bot:
         usuario_id = message.author.id
         ahora = discord.utils.utcnow()
@@ -906,20 +907,12 @@ async def banear(interaction: discord.Interaction, usuario: discord.Member, moti
 @bot.tree.command(name="aislar", description="Incomunica a un ciudadano por un tiempo determinado.")
 async def aislar(interaction: discord.Interaction, usuario: discord.Member, minutos: int, motivo: str):
     if usuario.id == bot.user.id:
-        return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** No podés procesar a una oficial en funciones del Ministerio. El Estado es intocable.", ephemeral=True)
-        await bardear_por_md(usuario, "aislar", motivo)
-        await usuario.aislar(reason=motivo)
+        return await interaction.response.send_message("❌ **Incompetencia:** El Estado es intocable.", ephemeral=True)
+        
+    await bardear_por_md(usuario, "aislar", motivo)
     
-    tiempo = discord.utils.utcnow() + datetime.timedelta(minutos=minutos)
+    tiempo = discord.utils.utcnow() + datetime.timedelta(minutes=minutos)
     await usuario.timeout(tiempo, reason=motivo)
-    await interaction.response.send_message(f"✅ {usuario.name} fue aislado por {minutos} minutos.", ephemeral=True)
-    
-    await publicar_escrache(
-        interaction.guild,
-        "🔇 INCOMUNICACIÓN DICTADA",
-        f"Se ha revocado temporalmente el derecho a la palabra de {usuario.mention}.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
-        discord.Color.orange()
-    )
         
 @bot.tree.command(name="indultar", description="Concede un indulto, restando un strike al legajo de un ciudadano.")
 async def indultar(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
