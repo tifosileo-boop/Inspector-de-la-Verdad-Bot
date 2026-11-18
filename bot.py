@@ -208,12 +208,15 @@ async def on_message(message):
             historial = []
             msg_actual = message
             
-        async with message.channel.typing():
+       async with message.channel.typing():
             for _ in range(5):
                 if msg_actual.reference:
                     try:
                         msg_prev = await message.channel.fetch_message(msg_actual.reference.message_id)
+                        
                         if msg_prev.interaction and msg_prev.interaction.name == "consultar":
+                            origen_valido = True
+                        elif msg_prev.author == bot.user and len(msg_prev.content) > 200:
                             origen_valido = True
                         
                         autor = "Inspectora" if msg_prev.author == bot.user else "Ciudadano"
