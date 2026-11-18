@@ -232,7 +232,7 @@ async def on_message(message):
             else:
                 break
     
-     if origen_valido:
+        if origen_valido:
                 try:
                     texto_historial = "\n".join(historial)
                     roles_usuario = [rol.name for rol in message.author.roles if rol.name != "@everyone"]
