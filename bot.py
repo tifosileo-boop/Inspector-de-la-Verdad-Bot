@@ -208,53 +208,53 @@ async def on_message(message):
             historial = []
             msg_actual = message
             
-       async with message.channel.typing():
-            for _ in range(5):
-                if msg_actual.reference:
-                    try:
-                        msg_prev = await message.channel.fetch_message(msg_actual.reference.message_id)
+           async with message.channel.typing():
+                for _ in range(5):
+                    if msg_actual.reference:
+                        try:
+                            msg_prev = await message.channel.fetch_message(msg_actual.reference.message_id)
+                            
+                            if msg_prev.interaction and msg_prev.interaction.name == "consultar":
+                                origen_valido = True
+                            elif msg_prev.author == bot.user and len(msg_prev.content) > 200:
+                                origen_valido = True
+                            
+                            autor = "Inspectora" if msg_prev.author == bot.user else "Ciudadano"
+                            historial.insert(0, f"{autor}: {msg_prev.content[:400]}")
+                            msg_actual = msg_prev
                         
-                        if msg_prev.interaction and msg_prev.interaction.name == "consultar":
-                            origen_valido = True
-                        elif msg_prev.author == bot.user and len(msg_prev.content) > 200:
-                            origen_valido = True
-                        
-                        autor = "Inspectora" if msg_prev.author == bot.user else "Ciudadano"
-                        historial.insert(0, f"{autor}: {msg_prev.content[:400]}")
-                        msg_actual = msg_prev
-                    
-                    except:
-                        break
-                else:
-                    break
-        
-        if origen_valido:
-            try:
-                texto_historial = "\n".join(historial)
-                roles_usuario = [rol.name for rol in message.author.roles if rol.name != "@everyone"]
-                texto_roles = ", ".join(roles_usuario) if roles_usuario else "Sin cargos (Civil)"
-                
-                prompt_conversacion = f"Expediente de la conversación previa:\n{texto_historial}\n\nEl usuario '{message.author.display_name}' (Roles oficiales: {texto_roles}) responde ahora: '{message.content}'\n\nRedactá tu respuesta oficial:"
-                
-                respuesta = modelo_inspectora.generate_content(prompt_conversacion)
-                texto_final = respuesta.text
-                
-                fragmentos = [texto_final[i:i+1900] for i in range(0, len(texto_final), 1900)]
-                
-                for i, fragmento in enumerate(fragmentos):
-                    if i == 0:
-                        await message.reply(fragmento)
+                        except:
+                            break
                     else:
-                        await message.channel.send(fragmento)
-                    await asyncio.sleep(1.5)
-                        
-            except Exception as e:
-                error_msj = str(e).lower()
-                if "429" in error_msj or "quota" in error_msj:
-                    await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto. Google nos da un tiempo de refresco mínimo.")
-                else:
-                    print(f"Error procesal en IA: {e}")
-            return 
+                        break
+            
+            if origen_valido:
+                try:
+                    texto_historial = "\n".join(historial)
+                    roles_usuario = [rol.name for rol in message.author.roles if rol.name != "@everyone"]
+                    texto_roles = ", ".join(roles_usuario) if roles_usuario else "Sin cargos (Civil)"
+                    
+                    prompt_conversacion = f"Expediente de la conversación previa:\n{texto_historial}\n\nEl usuario '{message.author.display_name}' (Roles oficiales: {texto_roles}) responde ahora: '{message.content}'\n\nRedactá tu respuesta oficial:"
+                    
+                    respuesta = modelo_inspectora.generate_content(prompt_conversacion)
+                    texto_final = respuesta.text
+                    
+                    fragmentos = [texto_final[i:i+1900] for i in range(0, len(texto_final), 1900)]
+                    
+                    for i, fragmento in enumerate(fragmentos):
+                        if i == 0:
+                            await message.reply(fragmento)
+                        else:
+                            await message.channel.send(fragmento)
+                        await asyncio.sleep(1.5)
+                            
+                except Exception as e:
+                    error_msj = str(e).lower()
+                    if "429" in error_msj or "quota" in error_msj:
+                        await message.reply("⏳ **MESA DE ENTRADAS SATURADA:** El Ministerio no da abasto. Google nos da un tiempo de refresco mínimo.")
+                    else:
+                        print(f"Error procesal en IA: {e}")
+                return 
             
     if bot.user in message.mentions or es_respuesta_al_bot:
         usuario_id = message.author.id
