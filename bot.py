@@ -209,32 +209,32 @@ async def on_message(message):
             msg_actual = message
             
     origen_valido = False
-            historial = []
-            msg_actual = message
-            
-            async with message.channel.typing(): 
-                for _ in range(5):
-                    if msg_actual.reference:
-                        try:
-                            msg_prev = await message.channel.fetch_message(msg_actual.reference.message_id)
-                            
-                            if msg_prev.interaction and msg_prev.interaction.name == "consultar":
-                                origen_valido = True
-                            elif msg_prev.author == bot.user and len(msg_prev.content) > 200:
-                                origen_valido = True
-                            
-                            autor = "Inspectora" if msg_prev.author == bot.user else "Ciudadano"
-                            historial.insert(0, f"{autor}: {msg_prev.content[:400]}")
-                            msg_actual = msg_prev
-                        
-                        except:
-                            break
-                    else:
-                        break
-            
-            if origen_valido: 
+    historial = []
+    msg_actual = message
+    
+    async with message.channel.typing(): 
+        for _ in range(5):
+            if msg_actual.reference:
                 try:
-                    texto_historial = "\n".join(historial)
+                    msg_prev = await message.channel.fetch_message(msg_actual.reference.message_id)
+                    
+                    if msg_prev.interaction and msg_prev.interaction.name == "consultar":
+                        origen_valido = True
+                    elif msg_prev.author == bot.user and len(msg_prev.content) > 200:
+                        origen_valido = True
+                    
+                    autor = "Inspectora" if msg_prev.author == bot.user else "Ciudadano"
+                    historial.insert(0, f"{autor}: {msg_prev.content[:400]}")
+                    msg_actual = msg_prev
+                
+                except:
+                    break
+            else:
+                break
+    
+    if origen_valido: 
+        try:
+            texto_historial = "\n".join(historial)
             
     if bot.user in message.mentions or es_respuesta_al_bot:
         usuario_id = message.author.id
