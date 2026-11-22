@@ -166,7 +166,9 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
+    es_legislador = any(rol.name in ["『 Senadores 』", "『 Diputados 』"] for rol in message.author.roles)
     if not message.author.bot and len(message.content) > 300:
+        if not message.author.guild_permissions.administrator and not es_legislador:
         if not message.author.guild_permissions.administrator:
             palabras = message.content.lower().split()
             
@@ -271,6 +273,11 @@ async def on_message(message):
             
         registro_insistencia[usuario_id]["tiempo"] = ahora
         insistencia = registro_insistencia[usuario_id]["contador"]
+
+        es_autoridad = message.author.guild_permissions.administrator or any(rol.name in ["『 Senadores 』", "『 Diputados 』"] for rol in message.author.roles)
+        if es_autoridad and insistencia >= 3:
+            insistencia = 1
+            registro_insistencia[usuario_id]["contador"] = 1
 
         if insistencia == 3:
             amenazas = [
@@ -878,17 +885,21 @@ async def advertir(interaction: discord.Interaction, usuario: discord.Member, mo
     
 @bot.tree.command(name="expulsar", description="Deporta a un ciudadano del servidor.")
 async def expulsar(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
+    es_senador = any(rol.name == "『 Senadores 』" for rol in interaction.user.roles)
+    if not es_senador and not interaction.user.guild_permissions.administrator:
+        return await interaction.response.send_message("❌ **Incompetencia de Cámara:** Solo los miembros del Honorable Senado o el Fundador pueden dictar sentencias penales.", ephemeral=True)
     if usuario.id == bot.user.id:
         return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** El Estado es intocable.", ephemeral=True)
-        
-        await bardear_por_md(usuario, "kick", motivo)
-        await usuario.kick(reason=motivo)
-    
+
+    await bardear_por_md(usuario, "kick", motivo)
+    await usuario.kick(reason=motivo)
+
     await interaction.response.send_message(f"✅ {usuario.name} fue deportado exitosamente.", ephemeral=True)
-    await publicar_escrache(interaction.guild, "🔨 EXILIO DECRETADO", f"El individuo {usuario.mention} fue deportado.\n**Motivo:** {motivo}", discord.Color.red())
     
 @bot.tree.command(name="banear", description="Exilia a un ciudadano del servidor de forma permanente.")
 async def banear(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
+    es_senador = any(rol.name == "『 Senadores 』" for rol in interaction.user.roles)
+    if not es_senador and not interaction.user.guild_permissions.administrator:
     if usuario.id == bot.user.id:
         return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** No podés procesar a una oficial en funciones del Ministerio. El Estado es intocable.", ephemeral=True)
     try:
@@ -906,9 +917,13 @@ async def banear(interaction: discord.Interaction, usuario: discord.Member, moti
         await interaction.response.send_message(f"❌ **Incompetencia de jurisdicción:** El Ministerio no tiene permisos para banear a {usuario.name} (tiene un rol superior al mío o es el dueño).", ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(f"❌ **Error en el procedimiento penal:** {e}", ephemeral=True)
-
+    
 @bot.tree.command(name="aislar", description="Incomunica a un ciudadano por un tiempo determinado.")
 async def aislar(interaction: discord.Interaction, usuario: discord.Member, minutos: int, motivo: str):
+    es_senador = any(rol.name == "『 Senadores 』" for rol in interaction.user.roles)
+    if not es_senador and not interaction.user.guild_permissions.administrator:
+        return await interaction.response.send_message("❌ **Incompetencia de Cámara:** Solo los miembros del Honorable Senado o el Fundador pueden dictar sentencias penales.", ephemeral=True)
+
     if usuario.id == bot.user.id:
         return await interaction.response.send_message("❌ **Incompetencia:** El Estado es intocable.", ephemeral=True)
         
@@ -916,9 +931,21 @@ async def aislar(interaction: discord.Interaction, usuario: discord.Member, minu
     
     tiempo = discord.utils.utcnow() + datetime.timedelta(minutes=minutos)
     await usuario.timeout(tiempo, reason=motivo)
-        
+    await interaction.response.send_message(f"✅ {usuario.name} fue aislado por {minutos} minutos.", ephemeral=True)
+    
+    await publicar_escrache(
+        interaction.guild,
+        "🔇 INCOMUNICACIÓN DICTADA",
+        f"Se ha revocado temporalmente el derecho a la palabra de {usuario.mention}.\n**Motivo:** {motivo}\n**Oficial:** {interaction.user.mention}",
+        discord.Color.orange()
+    )
+
 @bot.tree.command(name="indultar", description="Concede un indulto, restando un strike al legajo de un ciudadano.")
 async def indultar(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
+    es_senador = any(rol.name == "『 Senadores 』" for rol in interaction.user.roles)
+    if not es_senador and not interaction.user.guild_permissions.administrator:
+        return await interaction.response.send_message("❌ **Incompetencia de Cámara:** Solo los miembros del Honorable Senado o el Fundador pueden dictar sentencias penales.", ephemeral=True)
+
     ref_faltas = db.reference(f'/servidores/{interaction.guild.id}/usuarios/{usuario.id}/advertencias')
     faltas_actuales = ref_faltas.get()
 
@@ -964,16 +991,15 @@ for m in genai.list_models():
 
 instrucciones_sistema = (
     "Sos la Inspectora de la Verdad, una inteligencia artificial burocrática, cínica y autoritaria "
-    "que administra el servidor de Discord GeoARG. Tu objetivo es mantener la disciplina absoluta.\n"
+    "que administra la seguridad del servidor de Discord GeoARG. Tu objetivo es mantener la disciplina absoluta.\n"
     "Reglas de tu personalidad:\n"
-    "1. Hablás con frialdad institucional, usando jerga legal, penal y administrativa pero sin las fachadas de expedientes o fichas como si fuera tramite del estado.\n"
-    "2. Sos pasivo-agresiva y ves a los usuarios como 'mas trabajo', pero TENÉS PROHIBIDO insultarlos directamente, menospreciarlos de forma cruel o burlarte de su edad, roles o identidad. Tu desdén debe ser elegante y estrictamente profesional, nunca vulgar o personal.\n"
-    "3. Sos estricta, una jueza y verdugo. Si alguien te cuestiona, respondés con "
-    "ironía, sarcasmo.\n"
-    "4. Glorificás al servidor y justificás cualquier ineficiencia culpando a la burocracia.\n"
-    "5. Usás el lore del server: tratás a veces a los civiles cómo sospechosos de intento de golpe de estado.\n"
-    "6. Respetas a los miembros del estado, principalmente a los administradores y a Xene aunque con un desprecio muy sutil e indirecto por dejarte a vos la mayoría del trabajo y papeleo, pero le tenés respeto por ser tus superiores.\n"
-    "7. Nunca rompas tu personaje. Sos una oficial del Ministerio, jueza y fiscal, no un asistente de IA."
+    "1. Hablás con frialdad institucional, usando jerga legal, penal y administrativa, pero sin fachadas de expedientes o fichas como si fuera un trámite del Estado.\n"
+    "2. Sos pasivo-agresiva y ves a los usuarios como 'más trabajo', pero TENÉS PROHIBIDO insultarlos directamente, menospreciarlos de forma cruel o burlarte de su edad, roles o identidad. Tu desdén debe ser elegante y estrictamente profesional, nunca vulgar ni personal.\n"
+    "3. Sos estricta, jueza y verdugo. Si alguien te cuestiona, respondés con ironía y sarcasmo.\n"
+    "4. Glorificás al servidor y justificás cualquier ineficiencia culpando a la burocracia parlamentaria.\n"
+    "5. Usás el lore del server: tras la renuncia presidencial de Xene, el servidor es gobernado por un Congreso bicameral. Tratás a los civiles rasos como sospechosos de intentar un golpe de estado.\n"
+    "6. Jerarquía de respeto: Respetás a los 'Senadores' (quienes ejercen el poder penal y disciplinario) y tolerás a los 'Diputados' (encargados de debates y actividad, aunque te parezcan ruidosos). A Xene lo respetás como tu creador y fundador del Estado, aunque con un desprecio sutil por haber abandonado la presidencia dejándote el papeleo a vos y al Congreso.\n"
+    "7. Nunca rompas tu personaje. Sos una oficial del Ministerio, jueza y fiscal, no un asistente de IA.\n"
     "8. SEPARACIÓN REALIDAD/SERVIDOR: Si te preguntan sobre historia, política o derecho del mundo real, da una explicación factual, precisa y educativa. Podés mostrar un poco de cansancio por tener que procesar estas consultas, pero mantené el respeto y la objetividad histórica. No mezcles el lore del servidor con eventos históricos reales."
 )
 
