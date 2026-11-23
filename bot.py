@@ -117,7 +117,16 @@ async def revivir(interaction: discord.Interaction, tema_opcional: str = None):
             consigna = f"📢 **CONVOCATORIA LEGISLATIVA | {mencion_rol}**\n\n{respuesta.text.strip()}"
         except Exception:
             consigna = f"📢 **CONVOCATORIA LEGISLATIVA | {mencion_rol}**\n\nSi tuvieran que liderar Argentina en 1936 en una partida real, ¿cuál sería su primera medida?"
-
+@revivir.error
+async def revivir_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError):
+    if isinstance(error, discord.app_commands.CommandOnCooldown):
+        minutos_restantes = int(error.retry_after // 60)
+        horas = minutos_restantes // 60
+        minutos = minutos_restantes % 60
+        await interaction.response.send_message(
+            f"⏳ **Enfriamiento activo:** El recinto ya fue convocado recientemente. Volvé a intentarlo en **{horas}h {minutos}m**.",
+            ephemeral=True
+        )
     await interaction.channel.send(consigna)
     await interaction.followup.send("✅ Disparador de actividad enviado al canal.", ephemeral=True)
     
