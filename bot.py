@@ -96,6 +96,37 @@ async def configurar(interaction: discord.Interaction, canal_reportes: discord.T
         f"🚨 Las alertas generales irán a: {canal_alertas.mention}", 
         ephemeral=True
     )
+
+@bot.tree.command(name="revivir", description="Lanza un disparador de debate oficial para reactivar el chat.")
+@app_commands.checks.cooldown(1, 14400.0) 
+async def revivir(interaction: discord.Interaction, tema_opcional: str = None):
+    es_diputado = any(rol.name == "『 Diputados 』" for rol in interaction.user.roles)
+    es_senador = any(rol.name == "『 Senadores 』" for rol in interaction.user.roles)
+    if not es_diputado and not es_senador and not interaction.user.guild_permissions.administrator:
+        return await interaction.response.send_message(
+            "❌ **Incompetencia de Cámara:** Solo los miembros del Congreso (`『 Diputados 』` o `『 Senadores 』`) pueden convocar debates oficiales.",
+            ephemeral=True
+        )
+
+    await interaction.response.defer(ephemeral=True)
+    rol_revivir = discord.utils.get(interaction.guild.roles, name="Revivir Server")
+    mencion_rol = rol_revivir.mention if rol_revivir else "@Revivir Server"
+
+    if tema_opcional:
+        consigna = f"📢 **CONVOCATORIA LEGISLATIVA ({interaction.user.display_name}) | {mencion_rol}**\n\n{tema_opcional}"
+    else:
+        try:
+            prompt_debate = (
+                f"El legislador {interaction.user.display_name} te ordenó reactivar el chat de GeoARG. "
+                "Tirá una pregunta de debate corta, polémica o interesante sobre historia, geopolítica o gaming estratégico (máximo 3 líneas)."
+            )
+            respuesta = modelo_inspectora.generate_content(prompt_debate)
+            consigna = f"📢 **CONVOCATORIA LEGISLATIVA | {mencion_rol}**\n\n{respuesta.text.strip()}"
+        except Exception:
+            consigna = f"📢 **CONVOCATORIA LEGISLATIVA | {mencion_rol}**\n\nSi tuvieran que liderar Argentina en 1936 en una partida real, ¿cuál sería su primera medida?"
+
+    await interaction.channel.send(consigna)
+    await interaction.followup.send("✅ Disparador de actividad enviado al canal.", ephemeral=True)
     
 @bot.command()
 async def ping(ctx):
@@ -1203,37 +1234,6 @@ async def simular_nuke(interaction: discord.Interaction):
     )
     
     vista.mensaje = await canal.send(embed=embed, view=vista)
-
-@bot.tree.command(name="revivir", description="Lanza un disparador de debate oficial para reactivar el chat.")
-@app_commands.checks.cooldown(1, 14400.0) 
-async def revivir(interaction: discord.Interaction, tema_opcional: str = None):
-    es_diputado = any(rol.name == "『 Diputados 』" for rol in interaction.user.roles)
-    es_senador = any(rol.name == "『 Senadores 』" for rol in interaction.user.roles)
-    if not es_diputado and not es_senador and not interaction.user.guild_permissions.administrator:
-        return await interaction.response.send_message(
-            "❌ **Incompetencia de Cámara:** Solo los miembros del Congreso (`『 Diputados 』` o `『 Senadores 』`) pueden convocar debates oficiales.",
-            ephemeral=True
-        )
-
-    await interaction.response.defer(ephemeral=True)
-    rol_revivir = discord.utils.get(interaction.guild.roles, name="Revivir Server")
-    mencion_rol = rol_revivir.mention if rol_revivir else "@Revivir Server"
-
-    if tema_opcional:
-        consigna = f"📢 **CONVOCATORIA LEGISLATIVA ({interaction.user.display_name}) | {mencion_rol}**\n\n{tema_opcional}"
-    else:
-        try:
-            prompt_debate = (
-                f"El legislador {interaction.user.display_name} te ordenó reactivar el chat de GeoARG. "
-                "Tirá una pregunta de debate corta, polémica o interesante sobre historia, geopolítica o gaming estratégico (máximo 3 líneas)."
-            )
-            respuesta = modelo_inspectora.generate_content(prompt_debate)
-            consigna = f"📢 **CONVOCATORIA LEGISLATIVA | {mencion_rol}**\n\n{respuesta.text.strip()}"
-        except Exception:
-            consigna = f"📢 **CONVOCATORIA LEGISLATIVA | {mencion_rol}**\n\nSi tuvieran que liderar Argentina en 1936 en una partida real, ¿cuál sería su primera medida?"
-
-    await interaction.channel.send(consigna)
-    await interaction.followup.send("✅ Disparador de actividad enviado al canal.", ephemeral=True)
             
 keep_alive()
 token_secreto = os.getenv('DISCORD_TOKEN')
