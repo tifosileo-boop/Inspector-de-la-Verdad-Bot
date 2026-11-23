@@ -160,6 +160,45 @@ async def transmision_oficial():
         ultimo_mensaje_propaganda = mensaje_sorteado
         
         await canal.send(mensaje_sorteado)
+        
+@tasks.loop(hours=1)
+async def protocolo_revivir_chat():
+    canal = bot.get_channel(1394371063865147424)
+    if not canal:
+        return
+
+    ahora_utc = datetime.datetime.now(datetime.timezone.utc)
+    hora_argentina = (ahora_utc - datetime.timedelta(hours=3)).hour
+    if 0 <= hora_argentina < 9:
+        return
+
+    ultimo_mensaje = None
+    async for msg in canal.history(limit=1):
+        ultimo_mensaje = msg
+
+    if ultimo_mensaje:
+        if ultimo_mensaje.author == bot.user:
+            return
+
+        diferencia = ahora_utc - ultimo_mensaje.created_at
+        if diferencia.total_seconds() >= 18000:
+            rol_revivir = discord.utils.get(canal.guild.roles, name="Revivir Server")
+            mencion_rol = rol_revivir.mention if rol_revivir else "@Revivir Server"
+
+            try:
+                prompt_debate = (
+                    "El canal general de GeoARG lleva horas en silencio absoluto. "
+                    "Como la Inspectora de la Verdad, redactá un único disparador de debate breve, picante y atrapante "
+                    "(máximo 3 líneas) para obligar a los ciudadanos a opinar. Puede ser sobre historia argentina, "
+                    "ucronías geopolíticas, dilemas militares o una crítica cínica a la geopolitica internacional. "
+                    "No uses saludos largos ni fichas burocráticas, tirá la pregunta directa."
+                )
+                respuesta = modelo_inspectora.generate_content(prompt_debate)
+                tema = respuesta.text.strip()
+            except Exception:
+                tema = "¿Qué decisión histórica argentina cambiarían si tuvieran una máquina del tiempo y por qué terminaría igual en crisis?"
+
+            await canal.send(f"📡 **ALERTA DE INACTIVIDAD | {mencion_rol}**\n\n{tema}")
 
 @bot.event
 async def on_message(message):
@@ -968,9 +1007,11 @@ async def indultar(interaction: discord.Interaction, usuario: discord.Member, mo
 async def on_ready():
     print(f'¡La Inspectora ha arribado! Logueada como {bot.user}')
     
-    if not transmision_oficial.is_running(): transmision_oficial.start()
-    
+    if not transmision_oficial.is_running(): transmision_oficial.start() 
     if not rutina_diaria.is_running(): rutina_diaria.start()
+        
+    if not protocolo_revivir_chat.is_running():
+        protocolo_revivir_chat.start()
     
     try:
         mi_servidor = discord.Object(id=1394371062111666182)
@@ -1162,6 +1203,37 @@ async def simular_nuke(interaction: discord.Interaction):
     )
     
     vista.mensaje = await canal.send(embed=embed, view=vista)
+
+@bot.tree.command(name="revivir", description="Lanza un disparador de debate oficial para reactivar el chat.")
+@app_commands.checks.cooldown(1, 14400.0) 
+async def revivir(interaction: discord.Interaction, tema_opcional: str = None):
+    es_diputado = any(rol.name == "『 Diputados 』" for rol in interaction.user.roles)
+    es_senador = any(rol.name == "『 Senadores 』" for rol in interaction.user.roles)
+    if not es_diputado and not es_senador and not interaction.user.guild_permissions.administrator:
+        return await interaction.response.send_message(
+            "❌ **Incompetencia de Cámara:** Solo los miembros del Congreso (`『 Diputados 』` o `『 Senadores 』`) pueden convocar debates oficiales.",
+            ephemeral=True
+        )
+
+    await interaction.response.defer(ephemeral=True)
+    rol_revivir = discord.utils.get(interaction.guild.roles, name="Revivir Server")
+    mencion_rol = rol_revivir.mention if rol_revivir else "@Revivir Server"
+
+    if tema_opcional:
+        consigna = f"📢 **CONVOCATORIA LEGISLATIVA ({interaction.user.display_name}) | {mencion_rol}**\n\n{tema_opcional}"
+    else:
+        try:
+            prompt_debate = (
+                f"El legislador {interaction.user.display_name} te ordenó reactivar el chat de GeoARG. "
+                "Tirá una pregunta de debate corta, polémica o interesante sobre historia, geopolítica o gaming estratégico (máximo 3 líneas)."
+            )
+            respuesta = modelo_inspectora.generate_content(prompt_debate)
+            consigna = f"📢 **CONVOCATORIA LEGISLATIVA | {mencion_rol}**\n\n{respuesta.text.strip()}"
+        except Exception:
+            consigna = f"📢 **CONVOCATORIA LEGISLATIVA | {mencion_rol}**\n\nSi tuvieran que liderar Argentina en 1936 en una partida real, ¿cuál sería su primera medida?"
+
+    await interaction.channel.send(consigna)
+    await interaction.followup.send("✅ Disparador de actividad enviado al canal.", ephemeral=True)
             
 keep_alive()
 token_secreto = os.getenv('DISCORD_TOKEN')
