@@ -960,7 +960,7 @@ async def expulsar(interaction: discord.Interaction, usuario: discord.Member, mo
 @bot.tree.command(name="banear", description="Exilia a un ciudadano del servidor de forma permanente.")
 async def banear(interaction: discord.Interaction, usuario: discord.Member, motivo: str):
     es_senador = any(rol.name == "『 Senadores 』" for rol in interaction.user.roles)
-    not es_senador and not interaction.user.guild_permissions.administrator:
+    if not es_senador and not interaction.user.guild_permissions.administrator:
     if usuario.id == bot.user.id:
         return await interaction.response.send_message("❌ **Incompetencia de jurisdicción:** No podés procesar a una oficial en funciones del Ministerio. El Estado es intocable.", ephemeral=True)
     try:
