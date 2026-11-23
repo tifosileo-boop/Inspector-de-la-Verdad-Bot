@@ -13,6 +13,7 @@ import time
 import asyncio
 import os
 import google.generativeai as genai
+from discord import app_commands
 registro_insistencia = {}
 app = Flask('')
 
