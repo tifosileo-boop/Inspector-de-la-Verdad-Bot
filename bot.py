@@ -97,27 +97,19 @@ async def configurar(interaction: discord.Interaction, canal_reportes: discord.T
         ephemeral=True
     )
 
-@bot.tree.command(name="revivir", description="Lanza un disparador de debate oficial para reactivar el chat.")
+@bot.tree.command(name="quorum", description="Lanza un disparador de debate oficial para reactivar el chat.")
 @app_commands.checks.cooldown(1, 14400.0) 
 async def revivir(interaction: discord.Interaction, tema_opcional: str = None):
-    es_diputado = any(rol.name == "『 Diputados 』" for rol in interaction.user.roles)
-    es_senador = any(rol.name == "『 Senadores 』" for rol in interaction.user.roles)
-    if not es_diputado and not es_senador and not interaction.user.guild_permissions.administrator:
-        return await interaction.response.send_message(
-            "❌ **Incompetencia de Cámara:** Solo los miembros del Congreso (`『 Diputados 』` o `『 Senadores 』`) pueden convocar debates oficiales.",
-            ephemeral=True
-        )
-
     await interaction.response.defer(ephemeral=True)
-    rol_revivir = discord.utils.get(interaction.guild.roles, name="Revivir Server")
-    mencion_rol = rol_revivir.mention if rol_revivir else "@Revivir Server"
+    rol_quorum = discord.utils.get(interaction.guild.roles, name="『 Quorum 』")
+    mencion_rol = rol_quorum.mention if rol_quorum else "@『 Quorum 』"
 
     if tema_opcional:
         consigna = f"📢 **CONVOCATORIA LEGISLATIVA ({interaction.user.display_name}) | {mencion_rol}**\n\n{tema_opcional}"
     else:
         try:
             prompt_debate = (
-                f"El legislador {interaction.user.display_name} te ordenó reactivar el chat de GeoARG. "
+                f"El ciudadano {interaction.user.display_name} te ordenó reactivar el chat de GeoARG. "
                 "Tirá una pregunta de debate corta, polémica o interesante sobre historia, geopolítica o gaming estratégico (máximo 3 líneas)."
             )
             respuesta = modelo_inspectora.generate_content(prompt_debate)
@@ -213,8 +205,8 @@ async def protocolo_revivir_chat():
 
         diferencia = ahora_utc - ultimo_mensaje.created_at
         if diferencia.total_seconds() >= 18000:
-            rol_revivir = discord.utils.get(canal.guild.roles, name="Revivir Server")
-            mencion_rol = rol_revivir.mention if rol_revivir else "@Revivir Server"
+            rol_quorum = discord.utils.get(canal.guild.roles, name="『 Quorum 』")
+            mencion_rol = rol_quorum.mention if rol_quorum else "@『 Quorum 』"
 
             try:
                 prompt_debate = (
