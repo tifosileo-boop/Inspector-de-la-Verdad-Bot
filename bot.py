@@ -231,7 +231,6 @@ async def on_message(message):
     es_legislador = any(rol.name in ["『 Senadores 』", "『 Diputados 』"] for rol in message.author.roles)
     if not message.author.bot and len(message.content) > 300:
         if not message.author.guild_permissions.administrator and not es_legislador:
-        if not message.author.guild_permissions.administrator:
             palabras = message.content.lower().split()
             
             if len(palabras) > 10:
